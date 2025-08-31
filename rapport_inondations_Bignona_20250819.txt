@@ -1,0 +1,27 @@
+
+            === RAPPORT D'ANALYSE DES INONDATIONS ===
+            
+            Département: Bignona
+            Période d'analyse: 2025-02-20 à 2025-08-19
+            
+            === INDICATEURS ANDWI ===
+            • Valeur ANDWI moyenne: -0.254
+            • Surface d'eau détectée: 27412.25 hectares
+            • Pourcentage d'inondation: 5.26%
+            
+            === NIVEAU D'ALERTE ===
+            • Niveau: 2/4
+            • Statut: Modéré - Vigilance requise
+            
+            === INTERPRÉTATION ===
+            • ANDWI > 0 : Présence d'eau probable
+            • ANDWI < 0 : Surface sèche
+            • Plus la valeur est élevée, plus le risque d'inondation augmente
+            
+            === RECOMMANDATIONS ===
+            
+                ⚡ VIGILANCE:
+                • Suivi régulier de l'évolution
+                • Vérification des systèmes d'évacuation
+                • Communication préventive
+                

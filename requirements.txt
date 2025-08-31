@@ -1,0 +1,8 @@
+earthengine-api
+folium
+geemap
+pandas
+python-dateutil
+streamlit
+Pillow
+plotly
