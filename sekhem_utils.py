@@ -152,7 +152,7 @@ class Utils:
                 pass
             
             # Récupérer les informations du service account depuis les secrets Streamlit
-            service_account_info = st.secrets["earthengine"]
+            service_account_info = st.secrets["sekhem-earthengine"]
             
             # Créer les credentials pour le service account
             credentials = ee.ServiceAccountCredentials(
