@@ -24,8 +24,6 @@ def init_session_defaults(utils: Utils):
         st.session_state["end"] = pd.to_datetime(utils.getEndDate())
     if "dpt" not in st.session_state:
         st.session_state["dpt"] = utils.getDepartmentName()
-    if "use_enhanced_map" not in st.session_state:
-        st.session_state["use_enhanced_map"] = True  # par défaut on active la carte améliorée
 
 
 def _coerce_dates(begin_dt: pd.Timestamp, end_dt: pd.Timestamp):
@@ -51,10 +49,7 @@ class front:
     def drawMap(self):
         try:
             with st.spinner("Chargement de la carte…"):
-                if st.session_state.get("use_enhanced_map", True) and hasattr(self.utils, "show_enhanced_map"):
-                    m = self.utils.show_enhanced_map()
-                else:
-                    m = self.utils.show_combined_map()
+                m = self.utils.show_combined_map()
                 return m.to_streamlit(height=600, use_container_width=True)
         except Exception as e:
             st.error(f"Erreur d'affichage de la carte : {e}")
@@ -72,34 +67,27 @@ class front:
     def drawFloodDashboard(self):
         st.markdown("### 🌊 Tableau de Bord - Prédiction d'Inondations")
 
-        # -> Statistiques améliorées (fallback automatique côté Utils si non dispo)
-        flood_stats = self.utils.get_enhanced_flood_statistics()
-        lvl = int(flood_stats.get('alert_level', 0) or 0)
+        flood_stats = self.utils.get_flood_statistics()
+        lvl = int(flood_stats.get('alert_level', 0))
         msg = flood_stats.get('alert_message', 'N/A')
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric(
-                "💧 MNDWI Moyen",
-                f"{float(flood_stats.get('mndwi_mean', 0) or 0):.3f}",
-                help="Modified Normalized Difference Water Index (plus élevé ⇒ plus d'eau)"
-            )
+            st.metric("💧 MNDWI Moyen",
+                      f"{flood_stats.get('mndwi_mean', 0):.3f}",
+                      help="Modified Normalized Difference Water Index (plus élevé ⇒ plus d'eau)")
         with col2:
-            st.metric(
-                "🏞️ Surface d'eau",
-                f"{float(flood_stats.get('water_area_ha', 0) or 0):.2f} ha",
-                help="Surface totale d'eau détectée (ha)"
-            )
+            st.metric("🏞️ Surface d'eau",
+                      f"{flood_stats.get('water_area_ha', 0)} ha",
+                      help="Surface totale d'eau détectée (ha)")
         with col3:
-            st.metric(
-                "📊 % Inondation",
-                f"{float(flood_stats.get('flood_percentage', 0) or 0):.2f}%",
-                help="Pourcentage de la zone inondée"
-            )
+            st.metric("📊 % Inondation",
+                      f"{flood_stats.get('flood_percentage', 0):.2f}%",
+                      help="Pourcentage de la zone inondée")
         with col4:
             icon = {0: "🟢", 1: "🟡", 2: "🟠", 3: "🔴", 4: "🟣"}.get(lvl, "⚫")
             alert_labels = {0:"Très faible",1:"Faible",2:"Modéré",3:"Élevé",4:"Très élevé"}
-            st.metric(f"{icon} Niveau d'Alerte", f"Niveau {lvl} - {alert_labels.get(lvl, '—')}")
+            st.metric(f"{icon} Niveau d'Alerte", f"Niveau {lvl} - {alert_labels.get(lvl)}")
 
         if lvl >= 3:
             st.error(f"🚨 **ALERTE ÉLEVÉE**: {msg}")
@@ -108,28 +96,9 @@ class front:
         elif lvl == 1:
             st.info(f"ℹ️ **SURVEILLANCE**: {msg}")
         else:
-            st.success(f"✅ **NORMAL**: {msg}")
+            st.success(f"**NORMAL**: {msg}")
 
-        # Détail par type d'usage si disponible
-        with st.expander("📎 Détail des surfaces inondées par type de zone"):
-            urb = flood_stats.get('urban_flood_ha')
-            agr = flood_stats.get('agricultural_flood_ha')
-            frt = flood_stats.get('forest_flood_ha')
-            rur = flood_stats.get('rural_flood_ha')
-            tot = flood_stats.get('total_flood_ha')
-            if any(v is not None for v in [urb, agr, frt, rur, tot]):
-                st.write(f"- 🏙️ **Urbain** : {float(urb or 0):.2f} ha")
-                st.write(f"- 🌾 **Agricole** : {float(agr or 0):.2f} ha")
-                st.write(f"- 🌳 **Forêt/Végétation** : {float(frt or 0):.2f} ha")
-                st.write(f"- 🏞️ **Autres zones rurales** : {float(rur or 0):.2f} ha")
-                st.write(f"- 🧮 **Total** : {float(tot or 0):.2f} ha")
-                prio = flood_stats.get('priority_zones', [])
-                if prio:
-                    st.info("Zones prioritaires : " + ", ".join(prio))
-            else:
-                st.caption("Pas de détail par type d'usage disponible (fallback).")
-
-        # Série temporelle MNDWI (+ inondations urbaines si dispo)
+        # Série temporelle MNDWI
         st.markdown("#### 📈 Évolution MNDWI")
         flood_df = self.utils.get_flood_temporal_data()
 
@@ -141,12 +110,6 @@ class front:
                 line=dict(color='blue', width=3),
                 marker=dict(size=7)
             ))
-            # Série barres pour inondations urbaines si présente
-            if 'urban_flood_area' in flood_df.columns:
-                fig.add_trace(go.Bar(
-                    x=flood_df['periods'], y=flood_df['urban_flood_area'],
-                    name="Inondations urbaines (ha)", opacity=0.4
-                ))
             fig.add_hline(y=0, line_dash="dash", line_color="red",
                           annotation_text="Seuil eau (MNDWI = 0)")
             fig.add_hrect(y0=-1, y1=-0.3, fillcolor="green", opacity=0.08,
@@ -159,12 +122,11 @@ class front:
                           annotation_text="Eau certaine", annotation_position="left")
 
             fig.update_layout(
-                title="Évolution de l'indice MNDWI (et inondations urbaines si disponibles)",
+                title="Évolution de l'indice MNDWI",
                 xaxis_title="Date",
                 yaxis_title="MNDWI",
-                barmode="overlay",
                 showlegend=True,
-                height=420
+                height=400
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
@@ -218,13 +180,6 @@ class front:
             st.sidebar.markdown("# 🌍 SEKHEM")
 
         st.sidebar.markdown("<br>", unsafe_allow_html=True)
-
-        # Toggle carte améliorée
-        st.sidebar.markdown("### 🗺️ Affichage")
-        st.session_state["use_enhanced_map"] = st.sidebar.toggle(
-            "Carte améliorée (occupation du sol & types d'inondation)",
-            value=st.session_state.get("use_enhanced_map", True)
-        )
 
         # Statut système (avant filtres, pour donner un retour initial)
         system_status = self.utils.get_system_status()
@@ -302,12 +257,12 @@ class front:
                 except Exception:
                     st.metric("🌳 Superficie forestière", "—")
 
-                try: 
-                    fs = self.utils.get_flood_statistics() 
-                    st.metric("💧 MNDWI", f"{fs['mndwi_mean']:.3f}") 
-                    st.metric("🌊 Zone inondée", f"{fs['water_area_ha']} ha") 
-                except Exception: 
-                    st.metric("💧 MNDWI", "—") 
+                try:
+                    fs = self.utils.get_flood_statistics()
+                    st.metric("💧 MNDWI", f"{fs['mndwi_mean']:.3f}")
+                    st.metric("🌊 Zone inondée", f"{fs['water_area_ha']} ha")
+                except Exception:
+                    st.metric("💧 MNDWI", "—")
                     st.metric("🌊 Zone inondée", "—")
 
         with tab2:

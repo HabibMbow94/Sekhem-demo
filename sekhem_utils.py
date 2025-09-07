@@ -74,7 +74,6 @@ class Utils:
     def __init__(self, country_code='SEN'):
         self.country_code = country_code or COUNTRY_CODE
 
-        # Viz
         self.fires_vis = FIRES_VISUALIZATION
         self.temperature_vis = TEMPERATURE_VISUALIZATION
         self.tree_vis = FOREST_VISUALIZATION
@@ -83,30 +82,24 @@ class Utils:
         self.flood_risk_vis = FLOOD_RISK_VISUALIZATION
         self.sar_vv_vis = SAR_VV_VISUALIZATION
 
-        # Nouvelles visualisations pour éléments distincts
         self.land_cover_vis = {
             'min': 0, 'max': 4,
-            'palette': ['#D2B48C', '#228B22', '#FF6347', '#4169E1', '#800080']  # Sol, Végétation, Urbain, Eau, Inondé
+            'palette': ['#D2B48C', '#228B22', '#FF6347', '#4169E1', '#800080']
         }
-        self.urban_flood_vis = {'palette': ['#FF0000']}  # Rouge pour urgence
-        self.rural_flood_vis = {'palette': ['#FFA500']}  # Orange
-        self.normal_rivers_vis = {'palette': ['#0000FF']}  # Bleu foncé
+        self.urban_flood_vis = {'palette': ['#FF0000']}
+        self.rural_flood_vis = {'palette': ['#FFA500']}
+        self.normal_rivers_vis = {'palette': ['#0000FF']}
 
-        # Connexion + AOI
         self.connect()
         self.department = self.get_department_with_coordinates(DEPARTMENT_NAME)
 
-        # Période
         self.begining = BEGIN_DEFAULT
         self.end = END_DEFAULT
 
-        # Datasets
         self.update_datasets()
 
-        # Dossiers export
         self._ensure_export_dirs()
 
-        # Sorties analyses (existantes)
         self.classified_cart = None
         self.classified_rf = None
         self.flood_risk_map = None
@@ -119,7 +112,6 @@ class Utils:
         self.flood_change_areas = None
         self.forest_area_ha = ee.Number(0)
 
-        # Nouvelles sorties pour classification améliorée
         self.permanent_water_mask = None
         self.urban_mask = None
         self.vegetation_mask = None
@@ -133,50 +125,34 @@ class Utils:
         self.forest_flooding = None
         self.enhanced_alert_info = None
 
-        # Pipelines
         self.classification()
         self.enhanced_flood_analysis()
 
     # ----------------- GEE -----------------
     def connect(self):
-        """
-        Connexion à Earth Engine avec gestion des cas st.secrets (AttrDict → dict)
-        """
         try:
-            # Vérifie si déjà initialisé
             try:
                 ee.data.getAssetRoots()
-                return  # Déjà initialisé
+                return
             except Exception:
                 pass
-
-            # Récupération des secrets
             service_account_info = st.secrets["sekhem-earthengine"]
 
-            # Conversion en dict standard
             try:
                 service_account_dict = dict(service_account_info)
             except Exception:
-                # Fallback si AttrDict ou objet non dict
                 service_account_dict = {k: str(v) for k, v in service_account_info.items()}
 
-            # Création des credentials
             credentials = ee.ServiceAccountCredentials(
                 email=service_account_dict["client_email"],
                 key_data=json.dumps(service_account_dict)
             )
-
-            # Initialisation Earth Engine
             ee.Initialize(credentials)
-            print("✅ Earth Engine initialisé avec succès!")
-
+            print("Earth Engine initialisé avec succès!")
         except Exception as e:
-            st.error(f"❌ Erreur Earth Engine: {e}")
+            st.error(f"Erreur Earth Engine: {e}")
             raise
 
-
-
-    # ----------------- Contexte géo -----------------
     def getAllDepartments(self):
         return ee.FeatureCollection(DEPARTMENT_DATASET_NAME).filter(
             ee.Filter.eq('shapeGroup', self.country_code)
@@ -206,7 +182,6 @@ class Utils:
         except Exception as e:
             print(f"[setDepartment] {e}")
 
-    # ----------------- Période -----------------
     def setBeginingDate(self, date_str):
         self._set_date('begining', date_str)
 
@@ -231,7 +206,6 @@ class Utils:
     def getEndDate(self):
         return self.end
 
-    # ----------------- Collections -----------------
     def get_image_collection(self, beginning, end, dataset_name):
         """Filtre robuste ; étend le début si vide."""
         try:
@@ -292,14 +266,12 @@ class Utils:
     def _ratio(a, b):
         return a.subtract(b).divide(a.add(b))
 
-    def calculate_enhanced_indices(self, img):
-        """Calcule tous les indices nécessaires pour la classification améliorée."""
+    def calculate_indices(self, img):
         try:
-            # Normalisation des bandes
-            b2 = img.select('B2').divide(10000)  # Bleu
-            b3 = img.select('B3').divide(10000)  # Vert
-            b4 = img.select('B4').divide(10000)  # Rouge
-            b8 = img.select('B8').divide(10000)  # NIR
+            b2 = img.select('B2').divide(10000)
+            b3 = img.select('B3').divide(10000)
+            b4 = img.select('B4').divide(10000)
+            b8 = img.select('B8').divide(10000)
             b11 = img.select('B11').divide(10000) # SWIR1
             b12 = img.select('B12').divide(10000) # SWIR2
             
@@ -344,27 +316,23 @@ class Utils:
         try:
             print("[Reference masks] Création des masques de référence...")
             
-            # 1. Masque des eaux permanentes
             try:
                 jrc_water = ee.Image("JRC/GSW1_4/GlobalSurfaceWater")
-                # Eaux présentes au moins 50% du temps
                 self.permanent_water_mask = jrc_water.select('occurrence').gt(50).clip(self.department)
                 print("[Reference masks] Eaux permanentes JRC chargées")
             except Exception as e:
                 print(f"[Reference masks] JRC Water error: {e}")
                 self.permanent_water_mask = None
             
-            # 2. Masque urbain
             try:
-                # Essaie Global Human Settlement Layer
                 ghsl = ee.Image("JRC/GHSL/P2023A/GHS_BUILT_S/2020").clip(self.department)
-                self.urban_mask = ghsl.gt(0)
-                print("[Reference masks] Zones urbaines GHSL chargées")
+                ghsl_single = ghsl.reduce(ee.Reducer.max()).rename('ghsl_built_max')
+                self.urban_mask = ghsl_single.gt(0).rename('urban_ref')
+                print("[Reference masks] Zones urbaines GHSL chargées (single-band)")
             except Exception as e:
                 print(f"[Reference masks] GHSL error: {e}, utilisation fallback NDBI")
-                self.urban_mask = None  # Sera calculé plus tard avec NDBI
-            
-            # 3. Réseau hydrographique
+                self.urban_mask = None
+
             try:
                 hydrosheds = ee.FeatureCollection("WWF/HydroSHEDS/v1/FreeFlowingRivers")
                 self.river_network = hydrosheds.filterBounds(self.department)
@@ -377,41 +345,32 @@ class Utils:
             print(f"[Reference masks] {e}")
 
     def classify_land_cover(self, s2_median):
-        """Classification améliorée des types d'occupation du sol."""
         try:
             mndwi = s2_median.select('MNDWI')
             ndwi = s2_median.select('NDWI')
             ndvi = s2_median.select('NDVI')
             ndbi = s2_median.select('NDBI')
-            
-            # 1. Détection de l'eau (priorité la plus haute)
+
             water_mask = mndwi.gt(WATER_THRESHOLD_MNDWI).And(ndwi.gt(WATER_THRESHOLD_NDWI))
-            
-            # 2. Zones urbaines
+
             if self.urban_mask is None:
-                # Fallback avec NDBI : zones avec fort indice de bâti ET faible végétation
                 urban_mask = ndbi.gt(NDBI_THRESHOLD).And(ndvi.lt(0.2))
-                self.urban_mask = urban_mask
             else:
-                urban_mask = self.urban_mask
-            
-            # 3. Végétation dense (forêts)
+                urban_mask = ee.Image(self.urban_mask).select([0]).rename('urban_ref_single')
+
             vegetation_mask = ndvi.gt(NDVI_THRESHOLD)
             self.vegetation_mask = vegetation_mask
-            
-            # 4. Agriculture/sol nu
+  
             agricultural_mask = ndvi.gt(0.2).And(ndvi.lt(NDVI_THRESHOLD)).And(ndbi.lt(NDBI_THRESHOLD))
-            
-            # 5. Sol nu
+
             bare_soil_mask = ndvi.lt(0.2).And(ndbi.lt(NDBI_THRESHOLD))
-            
-            # Création de la carte de classification (hiérarchique)
+
             land_cover = (ee.Image(0)  # Sol nu par défaut
-                         .where(bare_soil_mask, 0)      # Sol nu
-                         .where(agricultural_mask, 1)   # Agriculture
-                         .where(vegetation_mask, 2)     # Végétation dense
-                         .where(urban_mask, 3)          # Urbain
-                         .where(water_mask, 4)          # Eau
+                         .where(bare_soil_mask, 0)
+                         .where(agricultural_mask, 1)
+                         .where(vegetation_mask, 2)
+                         .where(urban_mask, 3)
+                         .where(water_mask, 4)
                          ).rename('land_cover')
             
             self.land_cover_map = land_cover
@@ -434,23 +393,18 @@ class Utils:
         try:
             if self.permanent_water_mask is None:
                 print("[Flood detection] Création d'un masque d'eau de référence approximatif...")
-                # Fallback : utilise la topographie pour identifier les cours d'eau probables
                 try:
                     dem = ee.Image("USGS/SRTMGL1_003").clip(self.department)
                     slope = ee.Terrain.slope(dem)
-                    # Zones plates avec eau = probables rivières
                     self.permanent_water_mask = current_water.And(slope.lt(2))
                 except Exception as dem_e:
                     print(f"[Flood detection] DEM error: {dem_e}")
-                    # Dernier fallback : considère 30% de l'eau comme permanente (zones centrales)
                     erosion_radius = 2
                     eroded_water = current_water.focal_min(erosion_radius, 'circle', 'pixels')
                     self.permanent_water_mask = eroded_water
-            
-            # Rivières/lacs en état normal
+
             self.normal_rivers = current_water.And(self.permanent_water_mask).rename('normal_rivers')
-            
-            # Zones inondées = eau actuelle MOINS eau permanente
+
             self.flood_areas = current_water.And(self.permanent_water_mask.Not()).rename('flood_areas')
             
             print(f"[Flood detection] Distinction eau normale/inondations effectuée")
@@ -465,64 +419,81 @@ class Utils:
             return None
 
     def analyze_flood_by_land_use(self, flood_areas, land_cover_masks):
-        """Analyse des inondations par type d'occupation du sol."""
         try:
-            # Inondations en zone urbaine (priorité maximale)
-            self.urban_flooding = flood_areas.And(land_cover_masks['urban']).rename('urban_flooding')
-            
-            # Inondations en zone rurale (non-urbaines)
-            self.rural_flooding = flood_areas.And(land_cover_masks['urban'].Not()).rename('rural_flooding')
-            
-            # Inondations en zone agricole
-            self.agricultural_flooding = flood_areas.And(land_cover_masks['agricultural']).rename('agricultural_flooding')
-            
-            # Inondations en forêt/végétation
-            self.forest_flooding = flood_areas.And(land_cover_masks['vegetation']).rename('forest_flooding')
-            
+            urban_mask = ee.Image(land_cover_masks['urban']).select([0]).rename('urban_ref_single')
+            veg_mask   = ee.Image(land_cover_masks['vegetation']).select([0])
+            agri_mask  = ee.Image(land_cover_masks['agricultural']).select([0])
+
+            self.urban_flooding = flood_areas.And(urban_mask).select([0]).rename('urban_flooding')
+            self.rural_flooding = flood_areas.And(urban_mask.Not()).select([0]).rename('rural_flooding')
+            self.agricultural_flooding = flood_areas.And(agri_mask).select([0]).rename('agricultural_flooding')
+            self.forest_flooding = flood_areas.And(veg_mask).select([0]).rename('forest_flooding')
+
             print("[Flood by land use] Analyse par type d'occupation terminée")
-            
             return {
                 'urban_flooding': self.urban_flooding,
                 'rural_flooding': self.rural_flooding,
                 'agricultural_flooding': self.agricultural_flooding,
                 'forest_flooding': self.forest_flooding
             }
-            
         except Exception as e:
             print(f"[Flood by land use] {e}")
             return None
 
+
     def calculate_enhanced_statistics(self, flood_by_landuse):
-        """Calcule des statistiques détaillées par type d'inondation."""
+    
+        """Calcule des statistiques détaillées par type d'inondation (ha) + risque pondéré."""
+
         try:
             stats = {}
             for flood_type, mask in flood_by_landuse.items():
                 try:
-                    area = mask.multiply(ee.Image.pixelArea()).reduceRegion(
+                    band_name = flood_type
+                    area_image = (
+                        mask.unmask(0)
+                            .rename(band_name)
+                            .selfMask()
+                            .multiply(ee.Image.pixelArea())
+                    )
+                    area_dict = area_image.reduceRegion(
                         reducer=ee.Reducer.sum(),
-                        geometry=self.department.geometry(),
+                        geometry=self.department,
                         scale=STATISTICS_SCALE,
                         maxPixels=MAX_PIXELS
                     )
-                    # reduceRegion retourne un dict avec la clé = nom du band (ici flood_type)
-                    stats[flood_type] = ee.Number(area.get(flood_type)).divide(10000)  # ha
+                    area_m2 = ee.Number(
+                        ee.Algorithms.If(
+                            area_dict.contains(band_name),
+                            ee.Algorithms.If(area_dict.get(band_name), area_dict.get(band_name), 0),
+                            0
+                        )
+                    )
+                    stats[flood_type] = area_m2.divide(10000)  # ha
+
                 except Exception as stat_e:
                     print(f"[Enhanced stats] Error for {flood_type}: {stat_e}")
                     stats[flood_type] = ee.Number(0)
 
-            urban_area        = stats.get('urban_flooding', ee.Number(0))
-            rural_area        = stats.get('rural_flooding', ee.Number(0))
+            urban_area = stats.get('urban_flooding', ee.Number(0))
+            rural_area = stats.get('rural_flooding', ee.Number(0))
             agricultural_area = stats.get('agricultural_flooding', ee.Number(0))
-            forest_area       = stats.get('forest_flooding', ee.Number(0))
+            forest_area = stats.get('forest_flooding', ee.Number(0))
 
-            weighted_risk = (urban_area.multiply(URBAN_WEIGHT)
-                            .add(agricultural_area.multiply(1.5))
-                            .add(rural_area)
-                            .add(forest_area.multiply(0.5)))
+            weighted_risk = (
+                urban_area.multiply(URBAN_WEIGHT)
+                .add(agricultural_area.multiply(1.5))
+                .add(rural_area)
+                .add(forest_area.multiply(0.5))
+
+            )
+
             return stats, weighted_risk
+
         except Exception as e:
             print(f"[Enhanced statistics] {e}")
             return {}, ee.Number(0)
+ 
 
     def generate_enhanced_alert_system(self, stats, weighted_risk):
         """Système d'alerte amélioré basé sur le type d'inondation."""
@@ -533,13 +504,12 @@ class Utils:
             agricultural_flood_ha = stats.get('agricultural_flooding', ee.Number(0)).getInfo()
             forest_flood_ha = stats.get('forest_flooding', ee.Number(0)).getInfo()
             weighted_risk_val = weighted_risk.getInfo()
-            
-            # Critères d'alerte différenciés (priorité aux zones habitées)
+
             alert_level = 0
             alert_message = "Aucune inondation significative détectée"
             priority_zones = []
             
-            if urban_flood_ha > 1000:  # > 1000 ha urbain inondé
+            if urban_flood_ha > 1000: 
                 alert_level = 4
                 alert_message = "ALERTE ROUGE : Inondations urbaines majeures"
                 priority_zones.append("zones urbaines critiques")
@@ -593,56 +563,34 @@ class Utils:
     def enhanced_flood_analysis(self):
         """Analyse complète avec distinction des éléments."""
         try:
-            print("[Enhanced flood analysis] Début de l'analyse améliorée...")
             
             # 1. Obtenir les données Sentinel-2
             s2 = self.get_sentinel2_collection()
-            if s2.size().getInfo() == 0:
-                print("⚠️ Pas de Sentinel-2 — fallback analyse classique")
-                return self.flood_analysis()  # Fallback vers l'ancienne méthode
             
             # 2. Calculer tous les indices
-            s2_with_indices = s2.map(self.calculate_enhanced_indices)
+            s2_with_indices = s2.map(self.calculate_indices)
             s2_median = s2_with_indices.median().clip(self.department)
             
-            # Maintien de la compatibilité avec l'ancien système
             self.mndwi_current = s2_median.select('MNDWI')
             self.ndwi_current = s2_median.select('NDWI')
-            
-            # 3. Créer les masques de référence
+
             self.create_reference_masks()
-            
-            # 4. Classification de l'occupation du sol
+
             land_cover_data = self.classify_land_cover(s2_median)
-            if land_cover_data is None:
-                return self.flood_analysis()  # Fallback
-            
-            # Maintien de la compatibilité
             self.water_extent = land_cover_data['water'].rename('water_mask')
-            
-            # 5. Distinguer eau normale vs inondations
             water_analysis = self.detect_flood_vs_normal_water(land_cover_data['water'])
-            if water_analysis is None:
-                return self.flood_analysis()  # Fallback
-            
-            # 6. Analyser inondations par type d'occupation du sol
+
             flood_by_landuse = self.analyze_flood_by_land_use(
                 water_analysis['flood_areas'], 
                 land_cover_data
             )
-            if flood_by_landuse is None:
-                return self.flood_analysis()  # Fallback
-            
-            # 7. Calculer statistiques détaillées
+
             stats, weighted_risk = self.calculate_enhanced_statistics(flood_by_landuse)
-            
-            # 8. Générer alertes améliorées
+
             self.enhanced_alert_info = self.generate_enhanced_alert_system(stats, weighted_risk)
-            
-            # 9. Maintenir compatibilité avec l'ancien système
+
             self.maintain_legacy_compatibility()
-            
-            # 10. Analyses temporelles et cartes de risque (maintenues)
+
             self.generate_flood_risk_map()
             self.temporal_flood_analysis(s2_with_indices)
             
@@ -650,62 +598,26 @@ class Utils:
             
         except Exception as e:
             print(f"[Enhanced flood analysis] {e} - Fallback vers analyse classique")
-            self.flood_analysis()
 
     def maintain_legacy_compatibility(self):
         """Maintient la compatibilité avec l'ancien système."""
         try:
             if self.enhanced_alert_info and self.water_extent is not None:
-                total_flood_ha = self.enhanced_alert_info['total_flood_ha']  # float
+                total_flood_ha = self.enhanced_alert_info['total_flood_ha']
+
                 total_area = ee.Image.pixelArea().reduceRegion(
                     reducer=ee.Reducer.sum(),
-                    geometry=self.department.geometry(),
+                    geometry=self.department,
                     scale=STATISTICS_SCALE,
                     maxPixels=MAX_PIXELS
                 )
                 total_ha = ee.Number(total_area.get('area')).divide(10000)
-
-                self.water_area_ha = ee.Number(total_flood_ha)  # <- wrap
+                
+                self.water_area_ha = ee.Number(total_flood_ha)
                 self.flood_percentage = self.water_area_ha.divide(total_ha).multiply(100)
+                
         except Exception as e:
             print(f"[Legacy compatibility] {e}")
-
-    # ----------------- Analyse inondations (ancienne méthode, conservée) -----------------
-    def flood_analysis(self):
-        """Méthode d'analyse classique (fallback)."""
-        try:
-            s2 = self.get_sentinel2_collection()
-            if s2.size().getInfo() == 0:
-                print("⚠️ Pas de Sentinel‑2 — fallback Sentinel‑1")
-                self.mndwi_current = None
-                self.ndwi_current = None
-                self.water_extent = self.get_s1_water_mask()
-                if self.water_extent is None:
-                    print("⚠️ Pas de Sentinel‑1 non plus.")
-                    return
-                self._compute_water_stats_from_mask(self.water_extent)
-                self.flood_risk_map = None
-                self.flood_probability = None
-                self.mndwi_change = None
-                self.flood_change_areas = None
-                return
-
-            s2_idx = s2.map(self.calculate_mndwi).map(self.calculate_ndwi)
-            s2_median = s2_idx.median().clip(self.department)
-
-            self.mndwi_current = s2_median.select('MNDWI')
-            self.ndwi_current = s2_median.select('NDWI')
-
-            water_mndwi = self.mndwi_current.gt(WATER_THRESHOLD_MNDWI)
-            water_ndwi = self.ndwi_current.gt(WATER_THRESHOLD_NDWI)
-            self.water_extent = water_mndwi.And(water_ndwi).rename('water_mask')
-
-            self.calculate_flood_statistics()
-            self.generate_flood_risk_map()
-            self.temporal_flood_analysis(s2_idx)
-
-        except Exception as e:
-            print(f"[flood_analysis] {e}")
 
     # ----------------- Sentinel‑1 (fallback) -----------------
     def get_s1_water_mask(self):
@@ -870,12 +782,9 @@ class Utils:
         try:
             if self.enhanced_alert_info:
                 return self.enhanced_alert_info
-            else:
-                # Fallback vers l'ancien système
-                return self.get_flood_statistics()
+
         except Exception as e:
             print(f"[Enhanced flood stats] {e}")
-            return self.get_flood_statistics()
 
     def get_detailed_flood_report(self):
         """Génère un rapport détaillé de l'analyse des inondations."""
@@ -1007,7 +916,7 @@ Date d'analyse : {datetime.now().strftime('%Y-%m-%d %H:%M')}
             if col.size().getInfo() == 0:
                 return pd.DataFrame()
 
-            col = col.map(self.calculate_enhanced_indices)
+            col = col.map(self.calculate_indices)
 
             def attach_enhanced_stats(img):
                 try:
@@ -1068,8 +977,8 @@ Date d'analyse : {datetime.now().strftime('%Y-%m-%d %H:%M')}
                 rows.append({
                     'periods': d,
                     'mndwi_values': m,
-                    'water_area': (w or 0) / 10000.0,  # ha
-                    'urban_flood_area': (u or 0) / 10000.0  # ha
+                    'water_area': (w or 0) / 10000.0,
+                    'urban_flood_area': (u or 0) / 10000.0
                 })
             return pd.DataFrame(rows)
         except Exception as e:
@@ -1079,7 +988,6 @@ Date d'analyse : {datetime.now().strftime('%Y-%m-%d %H:%M')}
     def get_flood_statistics(self):
         """Statistiques de compatibilité avec l'ancien système."""
         try:
-            # Utilise les nouvelles stats si disponibles
             if self.enhanced_alert_info:
                 return {
                     'water_area_ha': self.enhanced_alert_info['total_flood_ha'],
@@ -1093,8 +1001,7 @@ Date d'analyse : {datetime.now().strftime('%Y-%m-%d %H:%M')}
                         maxPixels=MAX_PIXELS
                     ).get('MNDWI').getInfo() if self.mndwi_current else 0.0
                 }
-            
-            # Fallback vers l'ancien système
+
             stats = {
                 'water_area_ha': 0.0,
                 'flood_percentage': 0.0,
@@ -1107,7 +1014,7 @@ Date d'analyse : {datetime.now().strftime('%Y-%m-%d %H:%M')}
                 stats['water_area_ha'] = round(float(self.water_area_ha.getInfo()), 2)
             if hasattr(self, 'flood_percentage'):
                 stats['flood_percentage'] = round(float(self.flood_percentage.getInfo()), 2)
-            
+
             alerts = {
                 0: "Très faible - Pas de risque immédiat",
                 1: "Faible - Surveillance recommandée",
@@ -1126,7 +1033,7 @@ Date d'analyse : {datetime.now().strftime('%Y-%m-%d %H:%M')}
                     maxPixels=MAX_PIXELS
                 ).get('MNDWI')
                 stats['mndwi_mean'] = round(float(mean_val.getInfo()), 3)
-            print("statistiques :", stats)
+
             return stats
         except Exception as e:
             print(f"[get_flood_statistics] {e}")
@@ -1295,8 +1202,15 @@ Date d'analyse : {datetime.now().strftime('%Y-%m-%d %H:%M')}
         if not isinstance(palette, list):
             return []
         return [self._ensure_hex(c) for c in palette if isinstance(c, str)]
-
+    
+    
     def _add_legend_html(self, m, title, sections, position='bottomright'):
+        """
+        Ajoute une légende déplaçable avec drag & drop.
+        sections: liste de tuples (titre_section, data, kind)
+        - kind='gradient' -> data = liste de couleurs ['#hex', ...]
+        - kind='chips'    -> data = liste de tuples [(#hex, label), ...]
+        """
         
         # Position initiale basée sur le paramètre
         if position == 'bottomright':
