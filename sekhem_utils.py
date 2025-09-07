@@ -2,10 +2,10 @@ import os
 import io
 from datetime import datetime, timedelta
 
-import ee
+import ee, json
 import folium
 import pandas as pd
-
+import streamlit as st
 import geemap
 import geemap.foliumap as geemap_f
 from geemap import cartoee
@@ -13,7 +13,6 @@ from geemap import cartoee
 from dateutil.relativedelta import relativedelta
 
 from config import (
-    PROJECT_NAME,
     DEPARTMENT_DATASET_NAME,
     DEPARTMENT_NAME,
     COUNTRY_CODE,
@@ -74,7 +73,6 @@ class Utils:
 
     def __init__(self, country_code='SEN'):
         self.country_code = country_code or COUNTRY_CODE
-        self.projectName = PROJECT_NAME
 
         # Viz
         self.fires_vis = FIRES_VISUALIZATION
@@ -144,8 +142,11 @@ class Utils:
         try:
             ee.Authenticate()
         except Exception:
-            pass  # probablement déjà authentifié
-        ee.Initialize(project=self.projectName)
+            pass
+        service_account_info = st.secrets["earthengine"]
+        credentials = ee.ServiceAccountCredentials(service_account_info["client_email"], key_data=json.dumps(service_account_info))
+        ee.Initialize(credentials)
+
 
     # ----------------- Contexte géo -----------------
     def getAllDepartments(self):
