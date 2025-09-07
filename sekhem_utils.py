@@ -143,9 +143,12 @@ class Utils:
             ee.Authenticate()
         except Exception:
             pass
-        service_account_info = st.secrets["earthengine"]
-        credentials = ee.ServiceAccountCredentials(service_account_info["client_email"], key_data=json.dumps(service_account_info))
-        ee.Initialize(credentials)
+        ee.Initialize(
+            credentials=ee.ServiceAccountCredentials(
+                st.secrets["client_email"],
+                st.secrets["private_key"]
+            )
+        )
 
 
     # ----------------- Contexte géo -----------------
