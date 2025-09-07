@@ -140,42 +140,40 @@ class Utils:
     # ----------------- GEE -----------------
     def connect(self):
         """
-        Connexion à Google Earth Engine en utilisant les service account credentials
+        Connexion à Earth Engine avec gestion des cas st.secrets (AttrDict → dict)
         """
         try:
-            # Vérifier si Earth Engine est déjà initialisé
+            # Vérifie si déjà initialisé
             try:
                 ee.data.getAssetRoots()
-                print("Earth Engine déjà initialisé")
-                return
-            except:
+                return  # Déjà initialisé
+            except Exception:
                 pass
-            
-            # Récupérer les informations du service account depuis les secrets Streamlit
+
+            # Récupération des secrets
             service_account_info = st.secrets["sekhem-earthengine"]
-            
-            # Créer les credentials pour le service account
+
+            # Conversion en dict standard
+            try:
+                service_account_dict = dict(service_account_info)
+            except Exception:
+                # Fallback si AttrDict ou objet non dict
+                service_account_dict = {k: str(v) for k, v in service_account_info.items()}
+
+            # Création des credentials
             credentials = ee.ServiceAccountCredentials(
-                service_account_info["client_email"], 
-                key_data=json.dumps(service_account_info)
+                email=service_account_dict["client_email"],
+                key_data=json.dumps(service_account_dict)
             )
-            
-            # Initialiser Earth Engine avec les credentials
+
+            # Initialisation Earth Engine
             ee.Initialize(credentials)
-            
-            print("Connexion à Google Earth Engine réussie avec service account!")
-            
-        except KeyError as e:
-            error_msg = f"Clé manquante dans les secrets Streamlit: {e}"
-            print(error_msg)
-            st.error(error_msg)
-            raise
-            
+            print("✅ Earth Engine initialisé avec succès!")
+
         except Exception as e:
-            error_msg = f"Erreur lors de la connexion à Earth Engine: {str(e)}"
-            print(error_msg)
-            st.error(error_msg)
+            st.error(f"❌ Erreur Earth Engine: {e}")
             raise
+
 
 
     # ----------------- Contexte géo -----------------
