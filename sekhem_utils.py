@@ -139,30 +139,43 @@ class Utils:
 
     # ----------------- GEE -----------------
     def connect(self):
+        """
+        Connexion à Google Earth Engine en utilisant les service account credentials
+        """
         try:
-            # Récupérer les informations du service account depuis les secrets
+            # Vérifier si Earth Engine est déjà initialisé
+            try:
+                ee.data.getAssetRoots()
+                print("Earth Engine déjà initialisé")
+                return
+            except:
+                pass
+            
+            # Récupérer les informations du service account depuis les secrets Streamlit
             service_account_info = st.secrets["earthengine"]
             
-            # Créer les credentials avec la bonne syntaxe
+            # Créer les credentials pour le service account
             credentials = ee.ServiceAccountCredentials(
                 service_account_info["client_email"], 
                 key_data=json.dumps(service_account_info)
             )
             
-            # Initialiser Earth Engine
+            # Initialiser Earth Engine avec les credentials
             ee.Initialize(credentials)
             
-            print("Connexion à Google Earth Engine réussie!")
+            print("Connexion à Google Earth Engine réussie avec service account!")
+            
+        except KeyError as e:
+            error_msg = f"Clé manquante dans les secrets Streamlit: {e}"
+            print(error_msg)
+            st.error(error_msg)
+            raise
             
         except Exception as e:
-            print(f"Erreur lors de la connexion à Earth Engine: {e}")
-            # Fallback vers l'authentification interactive si possible
-            try:
-                ee.Authenticate()
-                ee.Initialize()
-            except Exception as fallback_error:
-                print(f"Erreur lors du fallback: {fallback_error}")
-                raise
+            error_msg = f"Erreur lors de la connexion à Earth Engine: {str(e)}"
+            print(error_msg)
+            st.error(error_msg)
+            raise
 
 
     # ----------------- Contexte géo -----------------
