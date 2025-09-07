@@ -140,15 +140,29 @@ class Utils:
     # ----------------- GEE -----------------
     def connect(self):
         try:
-            ee.Authenticate()
-        except Exception:
-            pass
-        ee.Initialize(
-            credentials=ee.ServiceAccountCredentials(
-                st.secrets["client_email"],
-                st.secrets["private_key"]
+            # Récupérer les informations du service account depuis les secrets
+            service_account_info = st.secrets["earthengine"]
+            
+            # Créer les credentials avec la bonne syntaxe
+            credentials = ee.ServiceAccountCredentials(
+                service_account_info["client_email"], 
+                key_data=json.dumps(service_account_info)
             )
-        )
+            
+            # Initialiser Earth Engine
+            ee.Initialize(credentials)
+            
+            print("Connexion à Google Earth Engine réussie!")
+            
+        except Exception as e:
+            print(f"Erreur lors de la connexion à Earth Engine: {e}")
+            # Fallback vers l'authentification interactive si possible
+            try:
+                ee.Authenticate()
+                ee.Initialize()
+            except Exception as fallback_error:
+                print(f"Erreur lors du fallback: {fallback_error}")
+                raise
 
 
     # ----------------- Contexte géo -----------------
