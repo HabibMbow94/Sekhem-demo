@@ -1,4 +1,4 @@
-import os
+import json
 import ee
 import folium
 import geemap
@@ -11,6 +11,8 @@ from dateutil.relativedelta import relativedelta
 from ipywidgets import interact, widgets
 from IPython.display import display
 from config import *
+
+import streamlit as st
 # Suprieur ou egal a 0.8
 class FloodMonitoringSystem:
     def __init__(
@@ -74,11 +76,27 @@ class FloodMonitoringSystem:
     def connect_gee(self):
         """Connexion à Google Earth Engine."""
         try:
-            ee.Authenticate()
-            ee.Initialize(project=self.project_name)
-            print(STATUS_MESSAGES['gee_connected'])
+            try:
+                ee.data.getAssetRoots()
+                return
+            except Exception:
+                pass
+            service_account_info = st.secrets["sekhem-earthengine"]
+
+            try:
+                service_account_dict = dict(service_account_info)
+            except Exception:
+                service_account_dict = {k: str(v) for k, v in service_account_info.items()}
+
+            credentials = ee.ServiceAccountCredentials(
+                email=service_account_dict["client_email"],
+                key_data=json.dumps(service_account_dict)
+            )
+            ee.Initialize(credentials)
+            print("Earth Engine initialisé avec succès!")
         except Exception as e:
-            print(f"{STATUS_MESSAGES['gee_disconnected']}: {e}")
+            st.error(f"Erreur Earth Engine: {e}")
+            raise
 
     def get_department(self, name: str):
         """Récupère le département depuis le dataset geoBoundaries."""
