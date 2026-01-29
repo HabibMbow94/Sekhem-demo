@@ -1,6 +1,7 @@
-geemap
+geemap>=0.34.0
+python-box>=7.0.0
 setuptools
-earthengine-api>
+earthengine-api
 folium
 pandas
 python-dateutil
