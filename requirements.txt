@@ -1,7 +1,8 @@
-earthengine-api
-geemap==0.30.4
+geemap>=0.37.0
+setuptools>=65.0.0
+earthengine-api>=0.1.365
+folium>=0.12.1
 python-box==6.0.2
-folium==0.14.0
 pandas
 python-dateutil
 streamlit==1.29.0
