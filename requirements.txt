@@ -8,3 +8,5 @@ pandas
 python-dateutil
 Pillow
 plotly
+ipython
+ipywidgets
