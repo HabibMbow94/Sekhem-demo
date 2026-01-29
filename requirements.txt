@@ -1,7 +1,7 @@
-geemap>=0.35.1
+geemap
 earthengine-api
-streamlit>=1.41.0
-folium>=0.17.0
+streamlit
+folium
 pandas
 python-dateutil
 Pillow
