@@ -11,6 +11,11 @@ from dateutil.relativedelta import relativedelta
 from ipywidgets import interact, widgets
 from IPython.display import display
 from config import *
+import subprocess
+import sys
+
+# Forcer la version compatible
+subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "python-box==7.0.1"])
 
 import streamlit as st
 # Suprieur ou egal a 0.8
