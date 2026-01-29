@@ -1,11 +1,10 @@
-geemap>=0.37.0
-setuptools>=65.0.0
-earthengine-api>=0.1.365
-folium>=0.12.1
-python-box==6.0.2
+geemap
+setuptools
+earthengine-api>
+folium
 pandas
 python-dateutil
-streamlit==1.29.0
-altair==4.2.2
+streamlit
+altair
 Pillow
 plotly
