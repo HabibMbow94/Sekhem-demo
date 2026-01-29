@@ -1,7 +1,7 @@
 import json
 import ee
 import folium
-# import geemap
+import geemap
 import geemap.foliumap as geemap
 import pandas as pd
 import plotly.express as px
