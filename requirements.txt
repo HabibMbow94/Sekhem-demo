@@ -6,3 +6,4 @@ pandas
 python-dateutil
 Pillow
 plotly
+python-box==7.3.0
