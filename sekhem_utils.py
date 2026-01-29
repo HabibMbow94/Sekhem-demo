@@ -570,7 +570,8 @@ class FloodMonitoringSystem:
         }
         </script>
         '''
-        m.get_root().html.add_child(folium.Element(legend_html))
+        m_folium = m.to_folium()
+        m_folium.get_root().html.add_child(folium.Element(legend_html))
         
         try:
             m.addLayerControl()
