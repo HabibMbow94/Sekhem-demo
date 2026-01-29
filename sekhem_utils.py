@@ -2,7 +2,7 @@ import json
 import ee
 import folium
 import geemap
-import geemap.foliumap as geemap_f
+# import geemap.foliumap as geemap_f
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -353,7 +353,7 @@ class FloodMonitoringSystem:
     
     def show_map(self, show_fires=True, show_temperature=True, show_forest=True, show_water=True):
         """Carte avec contrôle des couches à afficher."""
-        m = geemap_f.Map()
+        m = geemap.Map()
         # Zoom plus serré sur le département
         m.centerObject(self.department, 10)
         
