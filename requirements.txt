@@ -1,11 +1,8 @@
-earthengine-api>=0.1.0
-folium>=0.17.0
-geemap==0.34.5
-xyzservices==2024.9.0
+geemap>=0.35.1
+earthengine-api
 streamlit>=1.41.0
-pandas>=2.0.0
+folium>=0.17.0
+pandas
 python-dateutil
 Pillow
 plotly
-ipython>=8.0.0
-ipywidgets>=8.0.0
