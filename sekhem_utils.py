@@ -1,8 +1,8 @@
 import json
 import ee
 import folium
-import geemap
-# import geemap.foliumap as geemap_f
+# import geemap
+import geemap.foliumap as geemap
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -570,8 +570,7 @@ class FloodMonitoringSystem:
         }
         </script>
         '''
-        m_folium = m.to_folium()
-        m_folium.get_root().html.add_child(folium.Element(legend_html))
+        m.get_root().html.add_child(folium.Element(legend_html))
         
         try:
             m.addLayerControl()
