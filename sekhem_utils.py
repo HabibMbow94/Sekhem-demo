@@ -356,7 +356,7 @@ class FloodMonitoringSystem:
         m = geemap.Map()
         # Zoom plus serré sur le département
         m.centerObject(self.department, 10)
-        
+        st_folium(m, height=600)
         # === COUCHE FEUX DE BROUSSE ===
         if show_fires and hasattr(self, 'fires_dataset') and self.fires_dataset is not None and self.fires_dataset.size().getInfo() > 0:
             try:
@@ -571,7 +571,6 @@ class FloodMonitoringSystem:
         </script>
         '''
         m.add_html(legend_html, position="bottomright")
-        st_folium(m, height=600)
         try:
             m.addLayerControl()
         except Exception:
