@@ -3,6 +3,7 @@ import ee
 import folium
 import geemap
 # import geemap.foliumap as geemap
+from streamlit_folium import st_folium
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -570,7 +571,7 @@ class FloodMonitoringSystem:
         </script>
         '''
         m.add_html(legend_html, position="bottomright")
-        
+        st_folium(m, height=600)
         try:
             m.addLayerControl()
         except Exception:
