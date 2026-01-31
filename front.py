@@ -9,6 +9,7 @@ from plotly.subplots import make_subplots
 import ee
 import hashlib
 from datetime import datetime, timedelta
+from streamlit_folium import st_folium
 
 st.set_page_config(
     page_title="SEKHEM - Surveillance Environnementale et Inondations",
@@ -136,13 +137,13 @@ class FrontApp:
             with st.spinner("Chargement de la carte…"):
                 m = self.monitoring_system.show_map()
                 # Utiliser st_folium pour afficher la carte geemap dans Streamlit
-                return m.to_streamlit(height=600)
+                return st_folium(m, height=600, use_container_width=True)
         except Exception as e:
             st.error(f"Erreur d'affichage de la carte : {e}")
             # Afficher une carte de base en cas d'erreur
             import geemap
             basic_map = geemap.Map(center=[12.5, -16.5], zoom=8)
-            return basic_map.to_streamlit(height=600)
+            return st_folium(basic_map, height=600, use_container_width=True)
 
     def draw_graphics(self):
         """Affiche WEI (eau) + Couverture forestière (évolutions)."""
