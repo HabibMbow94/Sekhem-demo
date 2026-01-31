@@ -354,8 +354,18 @@ class FloodMonitoringSystem:
     def show_map(self, show_fires=True, show_temperature=True, show_forest=True, show_water=True):
         # 📍 Centre sur le département
         center = self.department.geometry().centroid().coordinates().getInfo()[::-1]
-    
         m = folium.Map(location=center, zoom_start=9, control_scale=True)
+    
+        # Fonction utilitaire pour convertir une image EE en couche Folium
+        def add_ee_layer(ee_image, vis_params, layer_name):
+            map_id_dict = ee.Image(ee_image).getMapId(vis_params)
+            folium.TileLayer(
+                tiles=map_id_dict['tile_fetcher'].url_format,
+                attr="Google Earth Engine",
+                name=layer_name,
+                overlay=True,
+                control=True
+            ).add_to(m)
     
         # =====================================
         # 🔥 FEUX DE BROUSSE
@@ -363,66 +373,44 @@ class FloodMonitoringSystem:
         if show_fires and self.fires_dataset and self.fires_dataset.size().getInfo() > 0:
             fires_frp = self.fires_dataset.select('frp').max().clip(self.department)
             fires_masked = fires_frp.updateMask(fires_frp.gt(5))
-    
-            vis = {'min': 5, 'max': 50,
-                   'palette': ['#FFFF00','#FFA500','#FF0000','#800000','#400000']}
-    
-            folium.TileLayer(
-                tiles=geemap.ee_tile_layer(fires_masked, vis, "Feux").tiles,
-                attr="GEE",
-                name="🔥 Feux de brousse",
-                overlay=True,
-                control=True
-            ).add_to(m)
+            vis = {
+                'min': 5, 'max': 50,
+                'palette': ['#FFFF00','#FFA500','#FF0000','#800000','#400000']
+            }
+            add_ee_layer(fires_masked, vis, "🔥 Feux de brousse")
     
         # =====================================
         # 🌡️ TEMPÉRATURE
         # =====================================
         if show_temperature and self.temperature_dataset and self.temperature_dataset.size().getInfo() > 0:
             temp = self.temperature_dataset.median().select('LST_Day_1km').clip(self.department)
-            vis = {'min': 13000,'max': 16500,
-                   'palette': ['#0A4D8C','#4FA3D1','#A5E6A3','#FFE066','#FF8C42','#C62828']}
-    
-            folium.TileLayer(
-                tiles=geemap.ee_tile_layer(temp, vis, "Température").tiles,
-                attr="GEE",
-                name="🌡️ Température surface",
-                overlay=True,
-                control=True
-            ).add_to(m)
+            vis = {
+                'min': 13000,'max': 16500,
+                'palette': ['#0A4D8C','#4FA3D1','#A5E6A3','#FFE066','#FF8C42','#C62828']
+            }
+            add_ee_layer(temp, vis, "🌡️ Température surface")
     
         # =====================================
         # 🌳 FORÊT
         # =====================================
         if show_forest and self.forest_dataset and self.forest_dataset.size().getInfo() > 0:
             forest = self.forest_dataset.median().select('trees').clip(self.department)
-            vis = {'min': 0.15, 'max': 0.8,
-                   'palette': ['#CDEAC0','#7BD389','#2E7D32','#1B5E20','#0B3D0B']}
-    
-            folium.TileLayer(
-                tiles=geemap.ee_tile_layer(forest, vis, "Forêt").tiles,
-                attr="GEE",
-                name="🌳 Couverture forestière",
-                overlay=True,
-                control=True
-            ).add_to(m)
+            vis = {
+                'min': 0.15, 'max': 0.8,
+                'palette': ['#CDEAC0','#7BD389','#2E7D32','#1B5E20','#0B3D0B']
+            }
+            add_ee_layer(forest, vis, "🌳 Couverture forestière")
     
         # =====================================
         # 🌊 INONDATIONS (WEI)
         # =====================================
         if show_water and self.wei_map:
             water = self.wei_map.clip(self.department).updateMask(self.wei_map.gte(self.wei_threshold))
-    
-            vis = {'min': 0.05,'max': 0.8,
-                   'palette': ['#CFEFFF','#8EC9FF','#4EA3FF','#1E7AD9','#0C4A99']}
-    
-            folium.TileLayer(
-                tiles=geemap.ee_tile_layer(water, vis, "Inondations").tiles,
-                attr="GEE",
-                name=f"🌊 Inondations (WEI ≥ {self.wei_threshold})",
-                overlay=True,
-                control=True
-            ).add_to(m)
+            vis = {
+                'min': 0.05,'max': 0.8,
+                'palette': ['#CFEFFF','#8EC9FF','#4EA3FF','#1E7AD9','#0C4A99']
+            }
+            add_ee_layer(water, vis, f"🌊 Inondations (WEI ≥ {self.wei_threshold})")
     
         # =====================================
         # 📍 CONTOUR DÉPARTEMENT
@@ -437,11 +425,12 @@ class FloodMonitoringSystem:
         # =====================================
         # 🎛️ CONTROLES
         # =====================================
-        LayerControl(collapsed=False).add_to(m)
+        folium.LayerControl(collapsed=False).add_to(m)
     
         # =====================================
         # 📺 STREAMLIT
         # =====================================
+        # Assure-toi que st_folium et folium sont bien importés
         st_folium(m, height=600, use_container_width=True)
     
         return m
