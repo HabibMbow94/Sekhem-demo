@@ -414,196 +414,200 @@ class FloodMonitoringSystem:
             add_ee_layer(water, vis, f"🌊 Inondations (WEI ≥ {self.wei_threshold})")
 
         legend_html = '''
-        <div id="legend-container" style="position: fixed;
-                     bottom: 20px; right: 20px; top: auto; left: auto; width: 300px; height: auto;
-                     background-color: white; border: 2px solid #333; z-index: 9999;
-                     font-size: 12px; border-radius: 8px;
-                     box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
-            
-            <!-- EN-TÊTE -->
-            <div id="legend-header" 
-                 style="display: flex; align-items: center; justify-content: space-between;
-                        padding: 8px 12px; cursor: move; background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-                        border-bottom: 1px solid #ddd; border-radius: 6px 6px 0 0;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 16px; margin-right: 6px;">🗺️</span>
-                    <h4 style="margin: 0; color: #333; font-size: 12px; font-weight: bold;">
-                        Surveillance environnementale
-                    </h4>
+            <div id="legend-container" style="position: fixed;
+                         bottom: 20px; right: 20px; width: 300px; height: auto;
+                         background-color: white; border: 2px solid #333; z-index: 9999;
+                         font-size: 12px; border-radius: 8px;
+                         box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
+                
+                <!-- EN-TÊTE -->
+                <div id="legend-header" 
+                     style="display: flex; align-items: center; justify-content: space-between;
+                            padding: 8px 12px; cursor: move; background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                            border-bottom: 1px solid #ddd; border-radius: 6px 6px 0 0;">
+                    <div style="display: flex; align-items: center;">
+                        <span style="font-size: 16px; margin-right: 6px;">🗺️</span>
+                        <h4 style="margin: 0; color: #333; font-size: 12px; font-weight: bold;">
+                            Surveillance environnementale
+                        </h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button id="toggle-btn" 
+                              style="background: none; border: none; cursor: pointer; color: #6c757d; 
+                                     font-weight: bold; font-size: 16px; user-select: none; 
+                                     padding: 0 4px; outline: none;">−</button>
+                        <button id="close-btn" 
+                              style="background: none; border: none; cursor: pointer; color: #dc3545; 
+                                     font-weight: bold; font-size: 16px; user-select: none; 
+                                     padding: 0 4px; outline: none;">✕</button>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span onclick="
-                        event.stopPropagation();
-                        var content = this.closest('#legend-container').querySelector('#legend-content');
-                        var btn = this;
+                
+                <!-- CONTENU -->
+                <div id="legend-content" style="padding: 12px; max-height: 400px; overflow-y: auto;">
+                    
+                    <!-- FEUX DE BROUSSE -->
+                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #ff6600; background: #fff5f0;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #cc4400; font-size: 11px;">
+                            🔥 Feux de brousse
+                        </p>
+                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                            <strong>FRP</strong> : Intensité énergétique des incendies détectés par satellite.
+                        </p>
+                        <div style="background: linear-gradient(to right, #ffff00, #ff8000, #ff0000, #800000, #400000);
+                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Modéré</span><span>Très intense</span>
+                        </div>
+                    </div>
+                    
+                    <!-- TEMPÉRATURE -->
+                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #0066cc; background: #f0f8ff;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #0066cc; font-size: 11px;">
+                            🌡️ Température de surface
+                        </p>
+                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                            <strong>LST</strong> : Température du sol mesurée par satellite infrarouge.
+                        </p>
+                        <div style="background: linear-gradient(to right, #0066cc, #00ccff, #66ff66, #ffff00, #ff6600, #cc0000);
+                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Froid (0°C)</span><span>Chaud (50°C)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- FORÊT -->
+                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #006600; background: #f0fff0;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #006600; font-size: 11px;">
+                            🌳 Couverture forestière
+                        </p>
+                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                            Probabilité de présence d'arbres (0-100%). Analyse satellite des zones boisées.
+                        </p>
+                        <div style="background: linear-gradient(to right, #90EE90, #66cc66, #339933, #006600, #003300);
+                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Peu d'arbres</span><span>Forêt dense</span>
+                        </div>
+                    </div>
+                    
+                   <!-- EAU (WEI) -->
+                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #1e90ff; background: #f0f8ff;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #1e90ff; font-size: 11px;">
+                            💧 Zones en eau
+                        </p>
+                        <p style="margin:3px 0;font-size:9px;color:#666;line-height:1.2;">
+                            <strong>WEI</strong> : présence d'eau en surface. Plus la valeur est élevée, plus l'eau est probable.
+                        </p>
+                        <div style="background: linear-gradient(to right, #e6f2ff, #b3d9ff, #66b2ff, #1e90ff, #003d7a);
+                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Faible</span><span>Fort</span>
+                        </div>
+                    </div>
+                    
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <!-- INFORMATIONS TECHNIQUES -->
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 8px;">
+                        <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 10px; color: #495057;">
+                            📊 Informations techniques
+                        </p>
+                        <div style="font-size: 9px; color: #6c757d; line-height: 1.3;">
+                            <p style="margin: 2px 0;"><strong>Période :</strong> ''' + self.begining + ''' → ''' + self.end + '''</p>
+                            <p style="margin: 2px 0;"><strong>Département :</strong> ''' + self.department_name + '''</p>
+                            <p style="margin: 2px 0;"><strong>Satellites :</strong> Sentinel-2, MODIS, VIIRS</p>
+                            <p style="margin: 2px 0;"><strong>Résolution :</strong> 10-1000m selon la couche</p>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <script>
+            (function() {
+                // Attendre que le DOM soit complètement chargé
+                setTimeout(function() {
+                    var container = document.getElementById('legend-container');
+                    var header = document.getElementById('legend-header');
+                    var toggleBtn = document.getElementById('toggle-btn');
+                    var closeBtn = document.getElementById('close-btn');
+                    var content = document.getElementById('legend-content');
+                    
+                    if (!container || !toggleBtn || !closeBtn || !content) {
+                        console.error('Éléments de légende non trouvés');
+                        return;
+                    }
+                    
+                    // Variables pour le drag
+                    var isDragging = false;
+                    var currentX = 0;
+                    var currentY = 0;
+                    var initialX = 0;
+                    var initialY = 0;
+                    
+                    // ===== BOUTON TOGGLE =====
+                    toggleBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        
                         if (content.style.display === 'none') {
-                          content.style.display = 'block';
-                          btn.innerHTML = '−';
+                            content.style.display = 'block';
+                            toggleBtn.textContent = '−';
                         } else {
-                          content.style.display = 'none';
-                          btn.innerHTML = '+';
+                            content.style.display = 'none';
+                            toggleBtn.textContent = '+';
                         }
-                        " style="cursor:pointer;color:#6c757d;font-weight:bold;font-size:14px;">−</span>
+                        return false;
+                    };
                     
-                    <span onclick="
-                        event.stopPropagation();
-                        this.closest('#legend-container').style.display='none';
-                        " style="cursor:pointer;color:#dc3545;font-weight:bold;font-size:14px;">✕</span>
-
-                </div>
-            </div>
-            
-            <!-- CONTENU -->
-            <div id="legend-content" style="padding: 12px; max-height: 400px; overflow-y: auto;">
-                
-                <!-- FEUX DE BROUSSE -->
-                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #ff6600; background: #fff5f0;">
-                    <p style="margin: 2px 0; font-weight: bold; color: #cc4400; font-size: 11px;">
-                        🔥 Feux de brousse
-                    </p>
-                    <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
-                        <strong>FRP</strong> : Intensité énergétique des incendies détectés par satellite.
-                    </p>
-                    <div style="background: linear-gradient(to right, #ffff00, #ff8000, #ff0000, #800000, #400000);
-                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                        <span>Modéré</span><span>Très intense</span>
-                    </div>
-                </div>
-                
-                <!-- TEMPÉRATURE -->
-                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #0066cc; background: #f0f8ff;">
-                    <p style="margin: 2px 0; font-weight: bold; color: #0066cc; font-size: 11px;">
-                        🌡️ Température de surface
-                    </p>
-                    <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
-                        <strong>LST</strong> : Température du sol mesurée par satellite infrarouge.
-                    </p>
-                    <div style="background: linear-gradient(to right, #0066cc, #00ccff, #66ff66, #ffff00, #ff6600, #cc0000);
-                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                        <span>Froid (0°C)</span><span>Chaud (50°C)</span>
-                    </div>
-                </div>
-                
-                <!-- FORÊT -->
-                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #006600; background: #f0fff0;">
-                    <p style="margin: 2px 0; font-weight: bold; color: #006600; font-size: 11px;">
-                        🌳 Couverture forestière
-                    </p>
-                    <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
-                        Probabilité de présence d'arbres (0-100%). Analyse satellite des zones boisées.
-                    </p>
-                    <div style="background: linear-gradient(to right, #90EE90, #66cc66, #339933, #006600, #003300);
-                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                        <span>Peu d'arbres</span><span>Forêt dense</span>
-                    </div>
-                </div>
-                
-               <!-- EAU (WEI) -->
-                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #1e90ff; background: #f0f8ff;">
-                    <p style="margin: 2px 0; font-weight: bold; color: #1e90ff; font-size: 11px;">
-                        💧 Zones en eau
-                    </p>
-                    <p style="margin:3px 0;font-size:9px;color:#666;line-height:1.2;">
-                        <strong>WEI</strong> : présence d'eau en surface. Plus la valeur est élevée, plus l'eau est probable.
-                    </p>
-                    <div style="background: linear-gradient(to right, #e6f2ff, #b3d9ff, #66b2ff, #1e90ff, #003d7a);
-                            height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;">
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                        <span>Faible</span><span>Fort</span>
-                    </div>
-                </div>
-                
-                <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
-                
-                <!-- INFORMATIONS TECHNIQUES -->
-                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 8px;">
-                    <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 10px; color: #495057;">
-                        📊 Informations techniques
-                    </p>
-                    <div style="font-size: 9px; color: #6c757d; line-height: 1.3;">
-                        <p style="margin: 2px 0;"><strong>Période :</strong> ''' + self.begining + ''' → ''' + self.end + '''</p>
-                        <p style="margin: 2px 0;"><strong>Département :</strong> ''' + self.department_name + '''</p>
-                        <p style="margin: 2px 0;"><strong>Satellites :</strong> Sentinel-2, MODIS, VIIRS</p>
-                        <p style="margin: 2px 0;"><strong>Résolution :</strong> 10-1000m selon la couche</p>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-        
-        # <script>
-        # (function() {
-        #     // Variables pour le drag
-        #     let isDragging = false;
-        #     let currentX = 0;
-        #     let currentY = 0;
-        #     let initialX = 0;
-        #     let initialY = 0;
-            
-        #     const container = document.getElementById('legend-container');
-        #     const header = document.getElementById('legend-header');
-        #     const toggleBtn = document.getElementById('toggle-btn');
-        #     const closeBtn = document.getElementById('close-btn');
-        #     const content = document.getElementById('legend-content');
-            
-        #     // ===== BOUTON TOGGLE =====
-        #     toggleBtn.addEventListener('click', function(e) {
-        #         e.stopPropagation();
-        #         e.preventDefault();
-                
-        #         if (content.style.display === 'none') {
-        #             content.style.display = 'block';
-        #             toggleBtn.textContent = '−';
-        #         } else {
-        #             content.style.display = 'none';
-        #             toggleBtn.textContent = '+';
-        #         }
-        #     });
-            
-        #     // ===== BOUTON CLOSE =====
-        #     closeBtn.addEventListener('click', function(e) {
-        #         e.stopPropagation();
-        #         e.preventDefault();
-        #         container.style.display = 'none';
-        #     });
-            
-        #     // ===== DRAG & DROP =====
-        #     header.addEventListener('mousedown', function(e) {
-        #         // Ne pas démarrer le drag si on clique sur les boutons
-        #         if (e.target === toggleBtn || e.target === closeBtn) {
-        #             return;
-        #         }
-                
-        #         isDragging = true;
-        #         initialX = e.clientX - currentX;
-        #         initialY = e.clientY - currentY;
-                
-        #         header.style.cursor = 'grabbing';
-        #     });
-            
-        #     document.addEventListener('mousemove', function(e) {
-        #         if (isDragging) {
-        #             e.preventDefault();
-        #             currentX = e.clientX - initialX;
-        #             currentY = e.clientY - initialY;
+                    // ===== BOUTON CLOSE =====
+                    closeBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        container.style.display = 'none';
+                        return false;
+                    };
                     
-        #             container.style.transform = `translate(${currentX}px, ${currentY}px)`;
-        #         }
-        #     });
-            
-        #     document.addEventListener('mouseup', function(e) {
-        #         if (isDragging) {
-        #             isDragging = false;
-        #             header.style.cursor = 'move';
-        #         }
-        #     });
-        # })();
-        # </script>
-        '''
+                    // ===== DRAG & DROP =====
+                    header.onmousedown = function(e) {
+                        // Ne pas démarrer le drag si on clique sur les boutons
+                        if (e.target === toggleBtn || e.target === closeBtn || 
+                            e.target.id === 'toggle-btn' || e.target.id === 'close-btn') {
+                            return;
+                        }
+                        
+                        isDragging = true;
+                        initialX = e.clientX - currentX;
+                        initialY = e.clientY - initialY;
+                        header.style.cursor = 'grabbing';
+                        
+                        e.preventDefault();
+                        return false;
+                    };
+                    
+                    document.onmousemove = function(e) {
+                        if (isDragging) {
+                            e.preventDefault();
+                            currentX = e.clientX - initialX;
+                            currentY = e.clientY - initialY;
+                            
+                            container.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
+                        }
+                    };
+                    
+                    document.onmouseup = function(e) {
+                        if (isDragging) {
+                            isDragging = false;
+                            header.style.cursor = 'move';
+                        }
+                    };
+                    
+                }, 100); // Délai de 100ms pour s'assurer que le DOM est prêt
+            })();
+            </script>
+'''
         
         # =====================================
         # 📍 CONTOUR DÉPARTEMENT
