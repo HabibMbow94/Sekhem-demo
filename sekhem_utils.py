@@ -355,7 +355,7 @@ class FloodMonitoringSystem:
     def show_map(self, show_fires=True, show_temperature=True, show_forest=True, show_water=True):
         # 📍 Centre sur le département
         center = self.department.geometry().centroid().coordinates().getInfo()[::-1]
-        m = folium.Map(location=center, zoom_start=9, control_scale=True)
+        m = folium.Map(location=center, zoom_start=11, control_scale=True)
     
         # Fonction utilitaire pour convertir une image EE en couche Folium
         def add_ee_layer(ee_image, vis_params, layer_name):
@@ -608,7 +608,7 @@ class FloodMonitoringSystem:
         # 📺 STREAMLIT
         # =====================================
         # Assure-toi que st_folium et folium sont bien importés
-        st_folium(m, height=600, use_container_width=True)
+        st_folium(m, height=600, width=True)
     
         return m
 
