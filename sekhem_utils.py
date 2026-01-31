@@ -351,9 +351,7 @@ class FloodMonitoringSystem:
     # =============================================
     # === VISUALISATION AMÉLIORÉE ===
     # =============================================
-    
-   def show_map(self, show_fires=True, show_temperature=True, show_forest=True, show_water=True):
-
+    def show_map(self, show_fires=True, show_temperature=True, show_forest=True, show_water=True):
         # 📍 Centre sur le département
         center = self.department.geometry().centroid().coordinates().getInfo()[::-1]
     
