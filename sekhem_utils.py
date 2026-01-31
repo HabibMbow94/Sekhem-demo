@@ -432,12 +432,24 @@ class FloodMonitoringSystem:
                     </h4>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span id="toggle-btn" 
-                          style="cursor: pointer; color: #6c757d; font-weight: bold; font-size: 16px; 
-                                 user-select: none; padding: 0 4px;">−</span>
-                    <span id="close-btn" 
-                          style="cursor: pointer; color: #dc3545; font-weight: bold; font-size: 16px;
-                                 user-select: none; padding: 0 4px;">✕</span>
+                    <span onclick="
+                        event.stopPropagation();
+                        var content = this.closest('#legend-container').querySelector('#legend-content');
+                        var btn = this;
+                        if (content.style.display === 'none') {
+                          content.style.display = 'block';
+                          btn.innerHTML = '−';
+                        } else {
+                          content.style.display = 'none';
+                          btn.innerHTML = '+';
+                        }
+                        " style="cursor:pointer;color:#6c757d;font-weight:bold;font-size:14px;">−</span>
+                    
+                    <span onclick="
+                        event.stopPropagation();
+                        this.closest('#legend-container').style.display='none';
+                        " style="cursor:pointer;color:#dc3545;font-weight:bold;font-size:14px;">✕</span>
+
                 </div>
             </div>
             
@@ -523,74 +535,74 @@ class FloodMonitoringSystem:
             </div>
         </div>
         
-        <script>
-        (function() {
-            // Variables pour le drag
-            let isDragging = false;
-            let currentX = 0;
-            let currentY = 0;
-            let initialX = 0;
-            let initialY = 0;
+        # <script>
+        # (function() {
+        #     // Variables pour le drag
+        #     let isDragging = false;
+        #     let currentX = 0;
+        #     let currentY = 0;
+        #     let initialX = 0;
+        #     let initialY = 0;
             
-            const container = document.getElementById('legend-container');
-            const header = document.getElementById('legend-header');
-            const toggleBtn = document.getElementById('toggle-btn');
-            const closeBtn = document.getElementById('close-btn');
-            const content = document.getElementById('legend-content');
+        #     const container = document.getElementById('legend-container');
+        #     const header = document.getElementById('legend-header');
+        #     const toggleBtn = document.getElementById('toggle-btn');
+        #     const closeBtn = document.getElementById('close-btn');
+        #     const content = document.getElementById('legend-content');
             
-            // ===== BOUTON TOGGLE =====
-            toggleBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
+        #     // ===== BOUTON TOGGLE =====
+        #     toggleBtn.addEventListener('click', function(e) {
+        #         e.stopPropagation();
+        #         e.preventDefault();
                 
-                if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    toggleBtn.textContent = '−';
-                } else {
-                    content.style.display = 'none';
-                    toggleBtn.textContent = '+';
-                }
-            });
+        #         if (content.style.display === 'none') {
+        #             content.style.display = 'block';
+        #             toggleBtn.textContent = '−';
+        #         } else {
+        #             content.style.display = 'none';
+        #             toggleBtn.textContent = '+';
+        #         }
+        #     });
             
-            // ===== BOUTON CLOSE =====
-            closeBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                container.style.display = 'none';
-            });
+        #     // ===== BOUTON CLOSE =====
+        #     closeBtn.addEventListener('click', function(e) {
+        #         e.stopPropagation();
+        #         e.preventDefault();
+        #         container.style.display = 'none';
+        #     });
             
-            // ===== DRAG & DROP =====
-            header.addEventListener('mousedown', function(e) {
-                // Ne pas démarrer le drag si on clique sur les boutons
-                if (e.target === toggleBtn || e.target === closeBtn) {
-                    return;
-                }
+        #     // ===== DRAG & DROP =====
+        #     header.addEventListener('mousedown', function(e) {
+        #         // Ne pas démarrer le drag si on clique sur les boutons
+        #         if (e.target === toggleBtn || e.target === closeBtn) {
+        #             return;
+        #         }
                 
-                isDragging = true;
-                initialX = e.clientX - currentX;
-                initialY = e.clientY - currentY;
+        #         isDragging = true;
+        #         initialX = e.clientX - currentX;
+        #         initialY = e.clientY - currentY;
                 
-                header.style.cursor = 'grabbing';
-            });
+        #         header.style.cursor = 'grabbing';
+        #     });
             
-            document.addEventListener('mousemove', function(e) {
-                if (isDragging) {
-                    e.preventDefault();
-                    currentX = e.clientX - initialX;
-                    currentY = e.clientY - initialY;
+        #     document.addEventListener('mousemove', function(e) {
+        #         if (isDragging) {
+        #             e.preventDefault();
+        #             currentX = e.clientX - initialX;
+        #             currentY = e.clientY - initialY;
                     
-                    container.style.transform = `translate(${currentX}px, ${currentY}px)`;
-                }
-            });
+        #             container.style.transform = `translate(${currentX}px, ${currentY}px)`;
+        #         }
+        #     });
             
-            document.addEventListener('mouseup', function(e) {
-                if (isDragging) {
-                    isDragging = false;
-                    header.style.cursor = 'move';
-                }
-            });
-        })();
-        </script>
+        #     document.addEventListener('mouseup', function(e) {
+        #         if (isDragging) {
+        #             isDragging = false;
+        #             header.style.cursor = 'move';
+        #         }
+        #     });
+        # })();
+        # </script>
         '''
         
         # =====================================
