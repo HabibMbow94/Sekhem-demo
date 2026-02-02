@@ -350,7 +350,7 @@ class FloodMonitoringSystem:
             return 0.0
 
     # =============================================
-    # === VISUALISATION AMÉLIORÉE ===
+    # === VISUALISATION ===
     # =============================================
     def show_map(self, show_fires=True, show_temperature=True, show_forest=True, show_water=True):
         # 📍 Centre sur le département
@@ -414,6 +414,7 @@ class FloodMonitoringSystem:
             add_ee_layer(water, vis, f"🌊 Inondations (WEI ≥ {self.wei_threshold})")
 
         legend_html = '''
+        {% macro html(this, kwargs) %}
             <div id="legend-container" style="position: fixed;
                          bottom: 20px; right: 20px; width: 300px; height: auto;
                          background-color: white; border: 2px solid #333; z-index: 9999;
@@ -497,7 +498,7 @@ class FloodMonitoringSystem:
                             💧 Zones en eau
                         </p>
                         <p style="margin:3px 0;font-size:9px;color:#666;line-height:1.2;">
-                            <strong>WEI</strong> : présence d’eau en surface. Plus la valeur est élevée, plus l’eau est probable.
+                            <strong>WEI</strong> : présence d'eau en surface. Plus la valeur est élevée, plus l'eau est probable.
                         </p>
                         <div style="background: linear-gradient(to right, #e6f2ff, #b3d9ff, #66b2ff, #1e90ff, #003d7a);
                                 height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;">
@@ -524,203 +525,88 @@ class FloodMonitoringSystem:
                     
                 </div>
             </div>
-
+            
             <script>
-                (function() {
-                    function initLegend() {
-                        var container = document.getElementById('legend-container');
-                        var header = document.getElementById('legend-header');
-                        var toggleBtn = document.getElementById('toggle-btn');
-                        var closeBtn = document.getElementById('close-btn');
-                        var content = document.getElementById('legend-content');
+            // Attendre le chargement complet du DOM
+            document.addEventListener('DOMContentLoaded', function() {
+                // Petit délai pour s'assurer que Folium a fini de charger
+                setTimeout(initializeLegend, 100);
+            });
+            
+            function initializeLegend() {
+                var container = document.getElementById('legend-container');
+                var header = document.getElementById('legend-header');
+                var toggleBtn = document.getElementById('toggle-btn');
+                var closeBtn = document.getElementById('close-btn');
+                var content = document.getElementById('legend-content');
                 
-                        if (!container || !toggleBtn || !closeBtn || !content || !header) {
-                            console.log('Éléments non encore disponibles, nouvelle tentative...');
-                            return false;
-                        }
+                if (!container || !toggleBtn || !closeBtn || !content || !header) {
+                    console.error('Éléments de légende non trouvés');
+                    return;
+                }
                 
-                        console.log('Légende initialisée avec succès');
+                console.log('✅ Légende initialisée avec succès');
                 
-                        // Variables pour le drag
-                        var isDragging = false;
-                        var currentX = 0;
-                        var currentY = 0;
-                        var initialX = 0;
-                        var initialY = 0;
+                // Variables pour le drag
+                var isDragging = false;
+                var currentX = 0;
+                var currentY = 0;
+                var initialX = 0;
+                var initialY = 0;
                 
-                        // Bouton Toggle
-                        toggleBtn.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                
-                            if (content.style.display === 'none') {
-                                content.style.display = 'block';
-                                toggleBtn.textContent = '−';
-                            } else {
-                                content.style.display = 'none';
-                                toggleBtn.textContent = '+';
-                            }
-                        });
-                
-                        // Bouton Close
-                        closeBtn.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            container.style.display = 'none';
-                        });
-                
-                        // Drag & Drop
-                        header.addEventListener('mousedown', function(e) {
-                            if (e.target === toggleBtn || e.target === closeBtn) {
-                                return;
-                            }
-                
-                            isDragging = true;
-                            initialX = e.clientX - container.offsetLeft;
-                            initialY = e.clientY - container.offsetTop;
-                            header.style.cursor = 'grabbing';
-                            e.preventDefault();
-                        });
-                
-                        document.addEventListener('mousemove', function(e) {
-                            if (isDragging) {
-                                e.preventDefault();
-                                container.style.left = (e.clientX - initialX) + 'px';
-                                container.style.top = (e.clientY - initialY) + 'px';
-                            }
-                        });
-                
-                        document.addEventListener('mouseup', function() {
-                            if (isDragging) {
-                                isDragging = false;
-                                header.style.cursor = 'move';
-                            }
-                        });
-                
-                        return true;
+                // ===== BOUTON TOGGLE =====
+                toggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    if (content.style.display === 'none') {
+                        content.style.display = 'block';
+                        toggleBtn.textContent = '−';
+                    } else {
+                        content.style.display = 'none';
+                        toggleBtn.textContent = '+';
                     }
+                });
                 
-                    // Essayer d'initialiser immédiatement
-                    if (!initLegend()) {
-                        // Si échec, utiliser MutationObserver pour détecter quand l'élément est ajouté
-                        var observer = new MutationObserver(function(mutations) {
-                            if (initLegend()) {
-                                observer.disconnect();
-                            }
-                        });
+                // ===== BOUTON CLOSE =====
+                closeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    container.style.display = 'none';
+                });
                 
-                        observer.observe(document.body, {
-                            childList: true,
-                            subtree: true
-                        });
-                
-                        // Timeout de sécurité après 5 secondes
-                        setTimeout(function() {
-                            observer.disconnect();
-                        }, 5000);
+                // ===== DRAG & DROP =====
+                header.addEventListener('mousedown', function(e) {
+                    // Ne pas démarrer le drag si on clique sur les boutons
+                    if (e.target === toggleBtn || e.target === closeBtn) {
+                        return;
                     }
-                })();
+                    
+                    isDragging = true;
+                    initialX = e.clientX - currentX;
+                    initialY = e.clientY - currentY;
+                    header.style.cursor = 'grabbing';
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', function(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+                        container.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
+                    }
+                });
+                
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        header.style.cursor = 'move';
+                    }
+                });
+            }
             </script>
-
-            # <script>
-            # // ✅ SOLUTION: Utiliser MutationObserver pour attendre que l'élément soit vraiment dans le DOM
-            # (function() {
-            #     function initLegend() {
-            #         var container = document.getElementById('legend-container');
-            #         var header = document.getElementById('legend-header');
-            #         var toggleBtn = document.getElementById('toggle-btn');
-            #         var closeBtn = document.getElementById('close-btn');
-            #         var content = document.getElementById('legend-content');
-                    
-            #         if (!container || !toggleBtn || !closeBtn || !content || !header) {
-            #             console.log('Éléments non encore disponibles, nouvelle tentative...');
-            #             return false;
-            #         }
-                    
-            #         console.log('✅ Légende initialisée avec succès');
-                    
-            #         // Variables pour le drag
-            #         var isDragging = false;
-            #         var currentX = 0;
-            #         var currentY = 0;
-            #         var initialX = 0;
-            #         var initialY = 0;
-                    
-            #         // ===== BOUTON TOGGLE =====
-            #         toggleBtn.addEventListener('click', function(e) {
-            #             e.stopPropagation();
-            #             e.preventDefault();
-                        
-            #             if (content.style.display === 'none') {
-            #                 content.style.display = 'block';
-            #                 toggleBtn.textContent = '−';
-            #             } else {
-            #                 content.style.display = 'none';
-            #                 toggleBtn.textContent = '+';
-            #             }
-            #         });
-                    
-            #         // ===== BOUTON CLOSE =====
-            #         closeBtn.addEventListener('click', function(e) {
-            #             e.stopPropagation();
-            #             e.preventDefault();
-            #             container.style.display = 'none';
-            #         });
-                    
-            #         // ===== DRAG & DROP =====
-            #         header.addEventListener('mousedown', function(e) {
-            #             // Ne pas démarrer le drag si on clique sur les boutons
-            #             if (e.target === toggleBtn || e.target === closeBtn) {
-            #                 return;
-            #             }
-                        
-            #             isDragging = true;
-            #             initialX = e.clientX - currentX;
-            #             initialY = e.clientY - currentY;
-            #             header.style.cursor = 'grabbing';
-            #             e.preventDefault();
-            #         });
-                    
-            #         document.addEventListener('mousemove', function(e) {
-            #             if (isDragging) {
-            #                 e.preventDefault();
-            #                 currentX = e.clientX - initialX;
-            #                 currentY = e.clientY - initialY;
-            #                 container.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
-            #             }
-            #         });
-                    
-            #         document.addEventListener('mouseup', function() {
-            #             if (isDragging) {
-            #                 isDragging = false;
-            #                 header.style.cursor = 'move';
-            #             }
-            #         });
-                    
-            #         return true;
-            #     }
-                
-            #     // Essayer d'initialiser immédiatement
-            #     if (!initLegend()) {
-            #         // Si échec, utiliser MutationObserver pour détecter quand l'élément est ajouté
-            #         var observer = new MutationObserver(function(mutations) {
-            #             if (initLegend()) {
-            #                 observer.disconnect();
-            #             }
-            #         });
-                    
-            #         observer.observe(document.body, {
-            #             childList: true,
-            #             subtree: true
-            #         });
-                    
-            #         // Timeout de sécurité après 5 secondes
-            #         setTimeout(function() {
-            #             observer.disconnect();
-            #         }, 5000);
-            #     }
-            # })();
-            # </script>
+        {% endmacro %}
         '''
         
         # =====================================
@@ -738,8 +624,10 @@ class FloodMonitoringSystem:
         # =====================================
         folium.LayerControl(collapsed=False).add_to(m)
         
-        # ✅ IMPORTANT: Utiliser get_root().html au lieu de Element
-        m.get_root().html.add_child(folium.Element(legend_html))
+        # ✅ CORRECTION: Utiliser MacroElement avec Template pour que JavaScript fonctionne
+        legend_macro = MacroElement()
+        legend_macro._template = Template(legend_html)
+        m.get_root().add_child(legend_macro)
     
         return m
 
