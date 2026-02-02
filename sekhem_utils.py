@@ -526,39 +526,100 @@ class FloodMonitoringSystem:
             </div>
 
             <script>
-            (function() {
-                function initLegend() {
-                    const container = document.getElementById('legend-container');
-                    const toggleBtn = document.getElementById('toggle-btn');
-                    const closeBtn = document.getElementById('close-btn');
-                    const content = document.getElementById('legend-content');
-            
-                    if (!container || !toggleBtn || !closeBtn || !content) {
-                        setTimeout(initLegend, 300);
-                        return;
-                    }
-            
-                    // TOGGLE
-                    toggleBtn.onclick = function(e) {
-                        e.preventDefault();
-                        if (content.style.display === 'none') {
-                            content.style.display = 'block';
-                            toggleBtn.textContent = '−';
-                        } else {
-                            content.style.display = 'none';
-                            toggleBtn.textContent = '+';
+                (function() {
+                    function initLegend() {
+                        var container = document.getElementById('legend-container');
+                        var header = document.getElementById('legend-header');
+                        var toggleBtn = document.getElementById('toggle-btn');
+                        var closeBtn = document.getElementById('close-btn');
+                        var content = document.getElementById('legend-content');
+                
+                        if (!container || !toggleBtn || !closeBtn || !content || !header) {
+                            console.log('Éléments non encore disponibles, nouvelle tentative...');
+                            return false;
                         }
-                    };
-            
-                    // CLOSE
-                    closeBtn.onclick = function(e) {
-                        e.preventDefault();
-                        container.style.display = 'none';
-                    };
-                }
-            
-                initLegend();
-            })();
+                
+                        console.log('Légende initialisée avec succès');
+                
+                        // Variables pour le drag
+                        var isDragging = false;
+                        var currentX = 0;
+                        var currentY = 0;
+                        var initialX = 0;
+                        var initialY = 0;
+                
+                        // Bouton Toggle
+                        toggleBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                
+                            if (content.style.display === 'none') {
+                                content.style.display = 'block';
+                                toggleBtn.textContent = '−';
+                            } else {
+                                content.style.display = 'none';
+                                toggleBtn.textContent = '+';
+                            }
+                        });
+                
+                        // Bouton Close
+                        closeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            container.style.display = 'none';
+                        });
+                
+                        // Drag & Drop
+                        header.addEventListener('mousedown', function(e) {
+                            if (e.target === toggleBtn || e.target === closeBtn) {
+                                return;
+                            }
+                
+                            isDragging = true;
+                            initialX = e.clientX - container.offsetLeft;
+                            initialY = e.clientY - container.offsetTop;
+                            header.style.cursor = 'grabbing';
+                            e.preventDefault();
+                        });
+                
+                        document.addEventListener('mousemove', function(e) {
+                            if (isDragging) {
+                                e.preventDefault();
+                                container.style.left = (e.clientX - initialX) + 'px';
+                                container.style.top = (e.clientY - initialY) + 'px';
+                            }
+                        });
+                
+                        document.addEventListener('mouseup', function() {
+                            if (isDragging) {
+                                isDragging = false;
+                                header.style.cursor = 'move';
+                            }
+                        });
+                
+                        return true;
+                    }
+                
+                    // Essayer d'initialiser immédiatement
+                    if (!initLegend()) {
+                        // Si échec, utiliser MutationObserver pour détecter quand l'élément est ajouté
+                        var observer = new MutationObserver(function(mutations) {
+                            if (initLegend()) {
+                                observer.disconnect();
+                            }
+                        });
+                
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true
+                        });
+                
+                        // Timeout de sécurité après 5 secondes
+                        setTimeout(function() {
+                            observer.disconnect();
+                        }, 5000);
+                    }
+                })();
             </script>
 
             # <script>
