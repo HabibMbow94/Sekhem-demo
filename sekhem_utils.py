@@ -1,6 +1,3 @@
-
-Copier
-
 import json
 import ee
 import folium
