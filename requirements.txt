@@ -7,4 +7,5 @@ pandas
 python-dateutil
 Pillow
 plotly
+branca
 
