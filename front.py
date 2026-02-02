@@ -9,6 +9,7 @@ from plotly.subplots import make_subplots
 import ee
 import hashlib
 from datetime import datetime, timedelta
+from streamlit_folium import st_folium
 
 st.set_page_config(
     page_title="SEKHEM - Surveillance Environnementale et Inondations",
@@ -136,13 +137,13 @@ class FrontApp:
             with st.spinner("Chargement de la carte…"):
                 m = self.monitoring_system.show_map()
                 # Utiliser st_folium pour afficher la carte geemap dans Streamlit
-                return m.to_streamlit(height=600)
+                return st_folium(m, height=600, width=True)
         except Exception as e:
             st.error(f"Erreur d'affichage de la carte : {e}")
             # Afficher une carte de base en cas d'erreur
             import geemap
             basic_map = geemap.Map(center=[12.5, -16.5], zoom=8)
-            return basic_map.to_streamlit(height=600)
+            return st_folium(basic_map, height=600, width=True)
 
     def draw_graphics(self):
         """Affiche WEI (eau) + Couverture forestière (évolutions)."""
@@ -210,7 +211,7 @@ class FrontApp:
                 fig.update_yaxes(title_text="WEI (0–1)", row=1, col=1, range=[0,1])
                 fig.update_yaxes(title_text="Forêt (%)", row=2, col=1, range=[0,100])
 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width=True)
 
                 # mini-trend badges
                 # self.display_trend_analysis(temporal_data)
@@ -246,7 +247,7 @@ class FrontApp:
                 xaxis_title="Date", yaxis_title="MNDWI",
                 height=350
             )
-            st.plotly_chart(fig_mndwi, use_container_width=True)
+            st.plotly_chart(fig_mndwi, width=True)
 
         # WEI
         if 'WEI' in df.columns:
@@ -264,7 +265,7 @@ class FrontApp:
                 yaxis=dict(range=[0,1]),
                 height=350
             )
-            st.plotly_chart(fig_wei, use_container_width=True)
+            st.plotly_chart(fig_wei, width=True)
 
     # def display_trend_analysis(self, temporal_data):
     #     """Affiche l'analyse des tendances."""
@@ -366,7 +367,7 @@ class FrontApp:
                     showlegend=True,
                     height=400
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width=True)
                 # if len(forest_df) > 1:
                 #     first_value = float(forest_df['forest_percentage'].iloc[0])
                 #     last_value = float(forest_df['forest_percentage'].iloc[-1])
@@ -412,7 +413,7 @@ class FrontApp:
             st.sidebar.error(f"Export CSV impossible : {e}")
 
     def download_maps_button(self):
-        if st.sidebar.button('📥 Télécharger rapport', key="btn_export_maps", use_container_width=True):
+        if st.sidebar.button('📥 Télécharger rapport', key="btn_export_maps", width=True):
             try:
                 with st.spinner("Génération du rapport…"):
                     report = self.monitoring_system.generate_report()
