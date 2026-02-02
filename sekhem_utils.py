@@ -524,36 +524,23 @@ class FloodMonitoringSystem:
                     
                 </div>
             </div>
-            
+
             <script>
-            // ✅ SOLUTION: Utiliser MutationObserver pour attendre que l'élément soit vraiment dans le DOM
             (function() {
                 function initLegend() {
-                    var container = document.getElementById('legend-container');
-                    var header = document.getElementById('legend-header');
-                    var toggleBtn = document.getElementById('toggle-btn');
-                    var closeBtn = document.getElementById('close-btn');
-                    var content = document.getElementById('legend-content');
-                    
-                    if (!container || !toggleBtn || !closeBtn || !content || !header) {
-                        console.log('Éléments non encore disponibles, nouvelle tentative...');
-                        return false;
+                    const container = document.getElementById('legend-container');
+                    const toggleBtn = document.getElementById('toggle-btn');
+                    const closeBtn = document.getElementById('close-btn');
+                    const content = document.getElementById('legend-content');
+            
+                    if (!container || !toggleBtn || !closeBtn || !content) {
+                        setTimeout(initLegend, 300);
+                        return;
                     }
-                    
-                    console.log('✅ Légende initialisée avec succès');
-                    
-                    // Variables pour le drag
-                    var isDragging = false;
-                    var currentX = 0;
-                    var currentY = 0;
-                    var initialX = 0;
-                    var initialY = 0;
-                    
-                    // ===== BOUTON TOGGLE =====
-                    toggleBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
+            
+                    // TOGGLE
+                    toggleBtn.onclick = function(e) {
                         e.preventDefault();
-                        
                         if (content.style.display === 'none') {
                             content.style.display = 'block';
                             toggleBtn.textContent = '−';
@@ -561,69 +548,118 @@ class FloodMonitoringSystem:
                             content.style.display = 'none';
                             toggleBtn.textContent = '+';
                         }
-                    });
-                    
-                    // ===== BOUTON CLOSE =====
-                    closeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
+                    };
+            
+                    // CLOSE
+                    closeBtn.onclick = function(e) {
                         e.preventDefault();
                         container.style.display = 'none';
-                    });
-                    
-                    // ===== DRAG & DROP =====
-                    header.addEventListener('mousedown', function(e) {
-                        // Ne pas démarrer le drag si on clique sur les boutons
-                        if (e.target === toggleBtn || e.target === closeBtn) {
-                            return;
-                        }
-                        
-                        isDragging = true;
-                        initialX = e.clientX - currentX;
-                        initialY = e.clientY - currentY;
-                        header.style.cursor = 'grabbing';
-                        e.preventDefault();
-                    });
-                    
-                    document.addEventListener('mousemove', function(e) {
-                        if (isDragging) {
-                            e.preventDefault();
-                            currentX = e.clientX - initialX;
-                            currentY = e.clientY - initialY;
-                            container.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
-                        }
-                    });
-                    
-                    document.addEventListener('mouseup', function() {
-                        if (isDragging) {
-                            isDragging = false;
-                            header.style.cursor = 'move';
-                        }
-                    });
-                    
-                    return true;
+                    };
                 }
-                
-                // Essayer d'initialiser immédiatement
-                if (!initLegend()) {
-                    // Si échec, utiliser MutationObserver pour détecter quand l'élément est ajouté
-                    var observer = new MutationObserver(function(mutations) {
-                        if (initLegend()) {
-                            observer.disconnect();
-                        }
-                    });
-                    
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true
-                    });
-                    
-                    // Timeout de sécurité après 5 secondes
-                    setTimeout(function() {
-                        observer.disconnect();
-                    }, 5000);
-                }
+            
+                initLegend();
             })();
             </script>
+
+            # <script>
+            # // ✅ SOLUTION: Utiliser MutationObserver pour attendre que l'élément soit vraiment dans le DOM
+            # (function() {
+            #     function initLegend() {
+            #         var container = document.getElementById('legend-container');
+            #         var header = document.getElementById('legend-header');
+            #         var toggleBtn = document.getElementById('toggle-btn');
+            #         var closeBtn = document.getElementById('close-btn');
+            #         var content = document.getElementById('legend-content');
+                    
+            #         if (!container || !toggleBtn || !closeBtn || !content || !header) {
+            #             console.log('Éléments non encore disponibles, nouvelle tentative...');
+            #             return false;
+            #         }
+                    
+            #         console.log('✅ Légende initialisée avec succès');
+                    
+            #         // Variables pour le drag
+            #         var isDragging = false;
+            #         var currentX = 0;
+            #         var currentY = 0;
+            #         var initialX = 0;
+            #         var initialY = 0;
+                    
+            #         // ===== BOUTON TOGGLE =====
+            #         toggleBtn.addEventListener('click', function(e) {
+            #             e.stopPropagation();
+            #             e.preventDefault();
+                        
+            #             if (content.style.display === 'none') {
+            #                 content.style.display = 'block';
+            #                 toggleBtn.textContent = '−';
+            #             } else {
+            #                 content.style.display = 'none';
+            #                 toggleBtn.textContent = '+';
+            #             }
+            #         });
+                    
+            #         // ===== BOUTON CLOSE =====
+            #         closeBtn.addEventListener('click', function(e) {
+            #             e.stopPropagation();
+            #             e.preventDefault();
+            #             container.style.display = 'none';
+            #         });
+                    
+            #         // ===== DRAG & DROP =====
+            #         header.addEventListener('mousedown', function(e) {
+            #             // Ne pas démarrer le drag si on clique sur les boutons
+            #             if (e.target === toggleBtn || e.target === closeBtn) {
+            #                 return;
+            #             }
+                        
+            #             isDragging = true;
+            #             initialX = e.clientX - currentX;
+            #             initialY = e.clientY - currentY;
+            #             header.style.cursor = 'grabbing';
+            #             e.preventDefault();
+            #         });
+                    
+            #         document.addEventListener('mousemove', function(e) {
+            #             if (isDragging) {
+            #                 e.preventDefault();
+            #                 currentX = e.clientX - initialX;
+            #                 currentY = e.clientY - initialY;
+            #                 container.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
+            #             }
+            #         });
+                    
+            #         document.addEventListener('mouseup', function() {
+            #             if (isDragging) {
+            #                 isDragging = false;
+            #                 header.style.cursor = 'move';
+            #             }
+            #         });
+                    
+            #         return true;
+            #     }
+                
+            #     // Essayer d'initialiser immédiatement
+            #     if (!initLegend()) {
+            #         // Si échec, utiliser MutationObserver pour détecter quand l'élément est ajouté
+            #         var observer = new MutationObserver(function(mutations) {
+            #             if (initLegend()) {
+            #                 observer.disconnect();
+            #             }
+            #         });
+                    
+            #         observer.observe(document.body, {
+            #             childList: true,
+            #             subtree: true
+            #         });
+                    
+            #         // Timeout de sécurité après 5 secondes
+            #         setTimeout(function() {
+            #             observer.disconnect();
+            #         }, 5000);
+            #     }
+            # })();
+            # </script>
         '''
         
         # =====================================
