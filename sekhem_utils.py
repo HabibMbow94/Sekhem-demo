@@ -414,8 +414,8 @@ class FloodMonitoringSystem:
             add_ee_layer(water, vis, f"🌊 Inondations (WEI ≥ {self.wei_threshold})")
 
         legend_html = '''
-            <div id="legend-container" style="position: fixed;
-                         bottom: 20px; right: 20px; width: 300px; height: auto;
+            <div id="legend-container" style="position: relative;
+                         bottom: 20px; right: 20px; width: 270px; height: auto;
                          background-color: white; border: 2px solid #333; z-index: 9999;
                          font-size: 12px; border-radius: 8px;
                          box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
@@ -431,23 +431,23 @@ class FloodMonitoringSystem:
                             Surveillance environnementale
                         </h4>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button id="toggle-btn" 
-                              style="background: none; border: none; cursor: pointer; color: #6c757d; 
-                                     font-weight: bold; font-size: 16px; user-select: none; 
-                                     padding: 0 4px; outline: none;">−</button>
-                        <button id="close-btn" 
-                              style="background: none; border: none; cursor: pointer; color: #dc3545; 
-                                     font-weight: bold; font-size: 16px; user-select: none; 
-                                     padding: 0 4px; outline: none;">✕</button>
-                    </div>
+                    # <div style="display: flex; align-items: center; gap: 8px;">
+                    #     <button id="toggle-btn" 
+                    #           style="background: none; border: none; cursor: pointer; color: #6c757d; 
+                    #                  font-weight: bold; font-size: 16px; user-select: none; 
+                    #                  padding: 0 4px; outline: none;">−</button>
+                    #     <button id="close-btn" 
+                    #           style="background: none; border: none; cursor: pointer; color: #dc3545; 
+                    #                  font-weight: bold; font-size: 16px; user-select: none; 
+                    #                  padding: 0 4px; outline: none;">✕</button>
+                    # </div>
                 </div>
                 
                 <!-- CONTENU -->
-                <div id="legend-content" style="padding: 12px; max-height: 400px; overflow-y: auto;">
+                <div id="legend-content" style="padding: 8px; max-height: 400px; overflow-y: auto;">
                     
                     <!-- FEUX DE BROUSSE -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #ff6600; background: #fff5f0;">
+                    <div style="margin-bottom: 8px; padding: 8px; border-left: 3px solid #ff6600; background: #fff5f0;">
                         <p style="margin: 2px 0; font-weight: bold; color: #cc4400; font-size: 11px;">
                             🔥 Feux de brousse
                         </p>
@@ -462,7 +462,7 @@ class FloodMonitoringSystem:
                     </div>
                     
                     <!-- TEMPÉRATURE -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #0066cc; background: #f0f8ff;">
+                    <div style="margin-bottom: 8px; padding: 8px; border-left: 3px solid #0066cc; background: #f0f8ff;">
                         <p style="margin: 2px 0; font-weight: bold; color: #0066cc; font-size: 11px;">
                             🌡️ Température de surface
                         </p>
@@ -477,7 +477,7 @@ class FloodMonitoringSystem:
                     </div>
                     
                     <!-- FORÊT -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #006600; background: #f0fff0;">
+                    <div style="margin-bottom: 8px; padding: 8px; border-left: 3px solid #006600; background: #f0fff0;">
                         <p style="margin: 2px 0; font-weight: bold; color: #006600; font-size: 11px;">
                             🌳 Couverture forestière
                         </p>
@@ -492,7 +492,7 @@ class FloodMonitoringSystem:
                     </div>
                     
                    <!-- EAU (WEI) -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #1e90ff; background: #f0f8ff;">
+                    <div style="margin-bottom: 8px; padding: 8px; border-left: 3px solid #1e90ff; background: #f0f8ff;">
                         <p style="margin: 2px 0; font-weight: bold; color: #1e90ff; font-size: 11px;">
                             💧 Zones en eau
                         </p>
