@@ -420,7 +420,7 @@ class FloodMonitoringSystem:
                          font-size: 12px; border-radius: 8px;
                          box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
                 
-                <!-- EN-TÊTE -->
+                <!-- EN-TÊTE 
                 <div id="legend-header" 
                      style="display: flex; align-items: center; justify-content: space-between;
                             padding: 8px 12px; cursor: move; background: linear-gradient(135deg, #f8f9fa, #e9ecef);
@@ -431,18 +431,18 @@ class FloodMonitoringSystem:
                             Surveillance environnementale
                         </h4>
                     </div>
-                    # <div style="display: flex; align-items: center; gap: 8px;">
-                    #     <button id="toggle-btn" 
-                    #           style="background: none; border: none; cursor: pointer; color: #6c757d; 
-                    #                  font-weight: bold; font-size: 16px; user-select: none; 
-                    #                  padding: 0 4px; outline: none;">−</button>
-                    #     <button id="close-btn" 
-                    #           style="background: none; border: none; cursor: pointer; color: #dc3545; 
-                    #                  font-weight: bold; font-size: 16px; user-select: none; 
-                    #                  padding: 0 4px; outline: none;">✕</button>
-                    # </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button id="toggle-btn" 
+                              style="background: none; border: none; cursor: pointer; color: #6c757d; 
+                                     font-weight: bold; font-size: 16px; user-select: none; 
+                                     padding: 0 4px; outline: none;">−</button>
+                        <button id="close-btn" 
+                              style="background: none; border: none; cursor: pointer; color: #dc3545; 
+                                     font-weight: bold; font-size: 16px; user-select: none; 
+                                     padding: 0 4px; outline: none;">✕</button>
+                    </div>
                 </div>
-                
+                -->
                 <!-- CONTENU -->
                 <div id="legend-content" style="padding: 8px; max-height: 400px; overflow-y: auto;">
                     
