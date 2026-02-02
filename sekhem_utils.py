@@ -1,3 +1,6 @@
+
+Copier
+
 import json
 import ee
 import folium
@@ -14,7 +17,7 @@ from ipywidgets import interact, widgets
 from IPython.display import display
 from config import *
 import streamlit as st
-from branca.element import Element
+from branca.element import Element, MacroElement, Template
 
 class FloodMonitoringSystem:
     def __init__(
