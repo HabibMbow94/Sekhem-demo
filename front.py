@@ -413,7 +413,7 @@ class FrontApp:
             st.sidebar.error(f"Export CSV impossible : {e}")
 
     def download_maps_button(self):
-        if st.sidebar.button('📥 Télécharger rapport', key="btn_export_maps", width=True):
+        if st.sidebar.button('📥 Télécharger rapport', key="btn_export_maps", width=False):
             try:
                 with st.spinner("Génération du rapport…"):
                     report = self.monitoring_system.generate_report()
