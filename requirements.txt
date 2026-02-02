@@ -1,6 +1,6 @@
 geemap==0.28.0
 folium==0.14.0
-earthengine-api==0.1.372
+earthengine-api
 streamlit==1.29.0
 python-dateutil
 Pillow
