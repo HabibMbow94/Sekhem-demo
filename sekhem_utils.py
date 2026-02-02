@@ -8,12 +8,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from ipywidgets import interact, widgets
-from IPython.display import display
+# from ipywidgets import interact, widgets
+# from IPython.display import display
 from config import *
-
 import streamlit as st
-# Suprieur ou egal a 0.8
+
+
 class FloodMonitoringSystem:
     def __init__(
         self,
@@ -960,27 +960,54 @@ class FloodMonitoringSystem:
     # === INTERFACE INTERACTIVE ===
     # =============================================
     
-    def interactive_widget(self):
-        """Crée un widget interactif pour sélectionner une période et recharger les données."""
-        date_range = widgets.DatePickerRange(
-            value=(datetime.strptime(self.begining, '%Y-%m-%d'), datetime.strptime(self.end, '%Y-%m-%d')),
-            description='Période',
-            disabled=False
-        )
-        button = widgets.Button(description="Recharger les données")
-        output = widgets.Output()
+    # def interactive_widget(self):
+    #     """Crée un widget interactif pour sélectionner une période et recharger les données."""
+    #     date_range = widgets.DatePickerRange(
+    #         value=(datetime.strptime(self.begining, '%Y-%m-%d'), datetime.strptime(self.end, '%Y-%m-%d')),
+    #         description='Période',
+    #         disabled=False
+    #     )
+    #     button = widgets.Button(description="Recharger les données")
+    #     output = widgets.Output()
         
-        def on_button_click(b):
-            with output:
-                new_begin = date_range.value[0].strftime('%Y-%m-%d')
-                new_end = date_range.value[1].strftime('%Y-%m-%d')
-                self.update_dates(new_begin, new_end)
-                self.show_map()
-                self.show_trends()
-                print(self.generate_report())
+    #     def on_button_click(b):
+    #         with output:
+    #             new_begin = date_range.value[0].strftime('%Y-%m-%d')
+    #             new_end = date_range.value[1].strftime('%Y-%m-%d')
+    #             self.update_dates(new_begin, new_end)
+    #             self.show_map()
+    #             self.show_trends()
+    #             print(self.generate_report())
         
-        button.on_click(on_button_click)
-        display(date_range, button, output)
+    #     button.on_click(on_button_click)
+    #     display(date_range, button, output)
+
+    def interactive_widget_streamlit(self):
+        """Crée une interface Streamlit pour sélectionner une période et recharger les données."""
+        
+        # Créer les sélecteurs de date
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input(
+                "Date de début",
+                value=datetime.strptime(self.begining, '%Y-%m-%d'),
+                key="start_date"
+            )
+        with col2:
+            end_date = st.date_input(
+                "Date de fin",
+                value=datetime.strptime(self.end, '%Y-%m-%d'),
+                key="end_date"
+            )
+        
+        # Bouton pour recharger
+        if st.button("Recharger les données"):
+            new_begin = start_date.strftime('%Y-%m-%d')
+            new_end = end_date.strftime('%Y-%m-%d')
+            self.update_dates(new_begin, new_end)
+            self.show_map()
+            self.show_trends()
+            st.write(self.generate_report())
 
     def update_dates(self, new_begin: str, new_end: str):
         """Met à jour les dates et recalcule les données."""
