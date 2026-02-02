@@ -1,7 +1,7 @@
-geemap==0.28.0
-folium==0.14.0
+geemap
+folium
 earthengine-api
-streamlit==1.29.0
+streamlit
 python-dateutil
 Pillow
 plotly
