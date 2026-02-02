@@ -414,7 +414,7 @@ class FloodMonitoringSystem:
             add_ee_layer(water, vis, f"🌊 Inondations (WEI ≥ {self.wei_threshold})")
 
         legend_html = '''
-            <div id="legend-container" style="position: relative;
+            <div id="legend-container" style="
                          bottom: 20px; right: 20px; width: 270px; height: auto;
                          background-color: white; border: 2px solid #333; z-index: 9999;
                          font-size: 12px; border-radius: 8px;
