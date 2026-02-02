@@ -446,16 +446,81 @@ class FloodMonitoringSystem:
                 <!-- CONTENU -->
                 <div id="legend-content" style="padding: 12px; max-height: 400px; overflow-y: auto;">
                     
-                    <!-- [Gardez tout votre contenu HTML existant ici] -->
                     <!-- FEUX DE BROUSSE -->
                     <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #ff6600; background: #fff5f0;">
                         <p style="margin: 2px 0; font-weight: bold; color: #cc4400; font-size: 11px;">
                             🔥 Feux de brousse
                         </p>
-                        <!-- ... reste du contenu ... -->
+                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                            <strong>FRP</strong> : Intensité énergétique des incendies détectés par satellite.
+                        </p>
+                        <div style="background: linear-gradient(to right, #ffff00, #ff8000, #ff0000, #800000, #400000);
+                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Modéré</span><span>Très intense</span>
+                        </div>
                     </div>
                     
-                    <!-- ... [tous vos autres blocs] ... -->
+                    <!-- TEMPÉRATURE -->
+                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #0066cc; background: #f0f8ff;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #0066cc; font-size: 11px;">
+                            🌡️ Température de surface
+                        </p>
+                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                            <strong>LST</strong> : Température du sol mesurée par satellite infrarouge.
+                        </p>
+                        <div style="background: linear-gradient(to right, #0066cc, #00ccff, #66ff66, #ffff00, #ff6600, #cc0000);
+                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Froid (0°C)</span><span>Chaud (50°C)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- FORÊT -->
+                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #006600; background: #f0fff0;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #006600; font-size: 11px;">
+                            🌳 Couverture forestière
+                        </p>
+                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                            Probabilité de présence d'arbres (0-100%). Analyse satellite des zones boisées.
+                        </p>
+                        <div style="background: linear-gradient(to right, #90EE90, #66cc66, #339933, #006600, #003300);
+                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Peu d'arbres</span><span>Forêt dense</span>
+                        </div>
+                    </div>
+                    
+                   <!-- EAU (WEI) -->
+                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #1e90ff; background: #f0f8ff;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #1e90ff; font-size: 11px;">
+                            💧 Zones en eau
+                        </p>
+                        <p style="margin:3px 0;font-size:9px;color:#666;line-height:1.2;">
+                            <strong>WEI</strong> : présence d’eau en surface. Plus la valeur est élevée, plus l’eau est probable.
+                        </p>
+                        <div style="background: linear-gradient(to right, #e6f2ff, #b3d9ff, #66b2ff, #1e90ff, #003d7a);
+                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                            <span>Faible</span><span>Fort</span>
+                        </div>
+                    </div>
+                    
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <!-- INFORMATIONS TECHNIQUES -->
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 8px;">
+                        <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 10px; color: #495057;">
+                            📊 Informations techniques
+                        </p>
+                        <div style="font-size: 9px; color: #6c757d; line-height: 1.3;">
+                            <p style="margin: 2px 0;"><strong>Période :</strong> ''' + self.begining + ''' → ''' + self.end + '''</p>
+                            <p style="margin: 2px 0;"><strong>Département :</strong> ''' + self.department_name + '''</p>
+                            <p style="margin: 2px 0;"><strong>Satellites :</strong> Sentinel-2, MODIS, VIIRS</p>
+                            <p style="margin: 2px 0;"><strong>Résolution :</strong> 10-1000m selon la couche</p>
+                        </div>
+                    </div>
                     
                 </div>
             </div>
