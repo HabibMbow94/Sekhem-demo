@@ -1,10 +1,8 @@
 import json
 import ee
 import folium
-from folium import LayerControl
 import geemap
-# import geemap.foliumap as geemap
-from streamlit_folium import st_folium
+import geemap.foliumap as geemap_f
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -13,9 +11,9 @@ from dateutil.relativedelta import relativedelta
 from ipywidgets import interact, widgets
 from IPython.display import display
 from config import *
-import streamlit as st
-from branca.element import Element, MacroElement, Template
 
+import streamlit as st
+# Suprieur ou egal a 0.8
 class FloodMonitoringSystem:
     def __init__(
         self,
@@ -350,285 +348,241 @@ class FloodMonitoringSystem:
             return 0.0
 
     # =============================================
-    # === VISUALISATION ===
+    # === VISUALISATION AMÉLIORÉE ===
     # =============================================
+    
     def show_map(self, show_fires=True, show_temperature=True, show_forest=True, show_water=True):
-        # 📍 Centre sur le département
-        center = self.department.geometry().centroid().coordinates().getInfo()[::-1]
-        m = folium.Map(location=center, zoom_start=10, control_scale=True)
+        """Carte avec contrôle des couches à afficher."""
+        
+        # Solution pour éviter l'erreur avec centerObject
+        try:
+            # Méthode 1: Obtenir le centre géométriquement
+            centroid = self.department.geometry().centroid().getInfo()['coordinates']
+            center_lon, center_lat = centroid[0], centroid[1]
+            m = geemap_f.Map(location=[center_lat, center_lon], zoom_start=10)
+        except:
+            # Méthode 2: Fallback simple
+            m = geemap_f.Map(location=[46.0, 2.0], zoom_start=6)  # Centre sur la France
+            
+        # === COUCHE FEUX DE BROUSSE ===
+        if show_fires and hasattr(self, 'fires_dataset') and self.fires_dataset is not None and self.fires_dataset.size().getInfo() > 0:
+            try:
+                fires_frp = self.fires_dataset.select('frp').max().clip(self.department)
+                fires_masked = fires_frp.updateMask(fires_frp.gt(5))
+                fires_vis = {'min': 5,'max': 50,'palette': ['#FFFF00','#FFA500','#FF0000','#800000','#400000']}
+                m.add_layer(fires_masked, fires_vis, "🔥 Feux de brousse", True, 0.85)
+            except Exception as e:
+                print(f"Erreur chargement feux : {e}")
     
-        # Fonction utilitaire pour convertir une image EE en couche Folium
-        def add_ee_layer(ee_image, vis_params, layer_name):
-            map_id_dict = ee.Image(ee_image).getMapId(vis_params)
-            folium.TileLayer(
-                tiles=map_id_dict['tile_fetcher'].url_format,
-                attr="Google Earth Engine",
-                name=layer_name,
-                overlay=True,
-                control=True
-            ).add_to(m)
+        # === COUCHE TEMPÉRATURE DE SURFACE ===
+        if show_temperature and hasattr(self, 'temperature_dataset') and self.temperature_dataset is not None and self.temperature_dataset.size().getInfo() > 0:
+            temp_median = self.temperature_dataset.median().select('LST_Day_1km')
+            temp_masked = temp_median.updateMask(temp_median.gte(12000).And(temp_median.lte(18000))).clip(self.department)
+            temp_vis = {'min': 13000,'max': 16500,'palette': ['#0A4D8C','#4FA3D1','#A5E6A3','#FFE066','#FF8C42','#C62828']}
+            m.add_layer(temp_masked, temp_vis, "🌡️ Température surface", True, 0.55)
     
-        # =====================================
-        # 🔥 FEUX DE BROUSSE
-        # =====================================
-        if show_fires and self.fires_dataset and self.fires_dataset.size().getInfo() > 0:
-            fires_frp = self.fires_dataset.select('frp').max().clip(self.department)
-            fires_masked = fires_frp.updateMask(fires_frp.gt(5))
-            vis = {
-                'min': 5, 'max': 50,
-                'palette': ['#FFFF00','#FFA500','#FF0000','#800000','#400000']
-            }
-            add_ee_layer(fires_masked, vis, "🔥 Feux de brousse")
+        # === COUCHE FORÊT ===
+        if show_forest and hasattr(self, 'forest_dataset') and self.forest_dataset is not None and self.forest_dataset.size().getInfo() > 0:
+            forest_median = self.forest_dataset.median().select('trees')
+            forest_masked = forest_median.updateMask(forest_median.gte(0.15)).clip(self.department)
+            forest_vis = {'min': 0.15, 'max': 0.8, 'palette': ['#CDEAC0','#7BD389','#2E7D32','#1B5E20','#0B3D0B']}
+            m.add_layer(forest_masked, forest_vis, "🌳 Couverture forestière", True, 0.85)
     
-        # =====================================
-        # 🌡️ TEMPÉRATURE
-        # =====================================
-        if show_temperature and self.temperature_dataset and self.temperature_dataset.size().getInfo() > 0:
-            temp = self.temperature_dataset.median().select('LST_Day_1km').clip(self.department)
-            vis = {
-                'min': 13000,'max': 16500,
-                'palette': ['#0A4D8C','#4FA3D1','#A5E6A3','#FFE066','#FF8C42','#C62828']
-            }
-            add_ee_layer(temp, vis, "🌡️ Température surface")
+        # === COUCHE EAU (WEI) ===
+        if show_water and hasattr(self, 'wei_map') and self.wei_map is not None:
+            wei = self.wei_map.clip(self.department)
+            water = wei.updateMask(wei.gte(max(0.05, float(self.wei_threshold))))
+            water_vis = {'min': 0.05,'max': 0.8,'palette': ['#CFEFFF','#8EC9FF','#4EA3FF','#1E7AD9','#0C4A99']}
+            m.add_layer(water, water_vis, f"🌊 Inondations (WEI ≥ {self.wei_threshold})", True, 0.65)
+        else:
+            print('⚠️ Pas de WEI pour la période')
     
-        # =====================================
-        # 🌳 FORÊT
-        # =====================================
-        if show_forest and self.forest_dataset and self.forest_dataset.size().getInfo() > 0:
-            forest = self.forest_dataset.median().select('trees').clip(self.department)
-            vis = {
-                'min': 0.15, 'max': 0.8,
-                'palette': ['#CDEAC0','#7BD389','#2E7D32','#1B5E20','#0B3D0B']
-            }
-            add_ee_layer(forest, vis, "🌳 Couverture forestière")
-    
-        # =====================================
-        # 🌊 INONDATIONS (WEI)
-        # =====================================
-        if show_water and self.wei_map:
-            water = self.wei_map.clip(self.department).updateMask(self.wei_map.gte(self.wei_threshold))
-            vis = {
-                'min': 0.05,'max': 0.8,
-                'palette': ['#CFEFFF','#8EC9FF','#4EA3FF','#1E7AD9','#0C4A99']
-            }
-            add_ee_layer(water, vis, f"🌊 Inondations (WEI ≥ {self.wei_threshold})")
+        # === CONTOUR DU DÉPARTEMENT ===
+        if hasattr(self, 'department') and self.department is not None:
+            dept_style = {'color': 'black', 'width': 2, 'fillColor': '00000000'}
+            m.add_layer(self.department.style(**dept_style), {}, f"📍 {self.department_name}")
 
+        # === LÉGENDE AMÉLIORÉE ===
         legend_html = '''
-        {% macro html(this, kwargs) %}
-            <div id="legend-container" style="position: fixed;
-                         bottom: 20px; right: 20px; width: 300px; height: auto;
-                         background-color: white; border: 2px solid #333; z-index: 9999;
-                         font-size: 12px; border-radius: 8px;
-                         box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
-                
-                <!-- EN-TÊTE -->
-                <div id="legend-header" 
-                     style="display: flex; align-items: center; justify-content: space-between;
-                            padding: 8px 12px; cursor: move; background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-                            border-bottom: 1px solid #ddd; border-radius: 6px 6px 0 0;">
-                    <div style="display: flex; align-items: center;">
-                        <span style="font-size: 16px; margin-right: 6px;">🗺️</span>
-                        <h4 style="margin: 0; color: #333; font-size: 12px; font-weight: bold;">
-                            Surveillance environnementale
-                        </h4>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button id="toggle-btn" 
-                              style="background: none; border: none; cursor: pointer; color: #6c757d; 
-                                     font-weight: bold; font-size: 16px; user-select: none; 
-                                     padding: 0 4px; outline: none;">−</button>
-                        <button id="close-btn" 
-                              style="background: none; border: none; cursor: pointer; color: #dc3545; 
-                                     font-weight: bold; font-size: 16px; user-select: none; 
-                                     padding: 0 4px; outline: none;">✕</button>
-                    </div>
+        <div id="legend-container" style="position: fixed;
+                     bottom: 20px; right: 20px; top: auto; left: auto; width: 300px; height: auto;
+                     background-color: white; border: 2px solid #333; z-index: 9999;
+                     font-size: 12px; border-radius: 8px;
+                     box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: Arial, sans-serif;
+                     cursor: move;" 
+                     onmousedown="startDrag(event)">
+            
+            <!-- EN-TÊTE -->
+            <div id="legend-header" onclick="toggleLegend()" 
+                 style="display: flex; align-items: center; justify-content: space-between;
+                        padding: 8px 12px; cursor: pointer; background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                        border-bottom: 1px solid #ddd; border-radius: 6px 6px 0 0;">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 16px; margin-right: 6px;">🗺️</span>
+                    <h4 style="margin: 0; color: #333; font-size: 12px; font-weight: bold;">
+                        Surveillance environnementale
+                    </h4>
                 </div>
-                
-                <!-- CONTENU -->
-                <div id="legend-content" style="padding: 12px; max-height: 400px; overflow-y: auto;">
-                    
-                    <!-- FEUX DE BROUSSE -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #ff6600; background: #fff5f0;">
-                        <p style="margin: 2px 0; font-weight: bold; color: #cc4400; font-size: 11px;">
-                            🔥 Feux de brousse
-                        </p>
-                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
-                            <strong>FRP</strong> : Intensité énergétique des incendies détectés par satellite.
-                        </p>
-                        <div style="background: linear-gradient(to right, #ffff00, #ff8000, #ff0000, #800000, #400000);
-                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
-                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                            <span>Modéré</span><span>Très intense</span>
-                        </div>
-                    </div>
-                    
-                    <!-- TEMPÉRATURE -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #0066cc; background: #f0f8ff;">
-                        <p style="margin: 2px 0; font-weight: bold; color: #0066cc; font-size: 11px;">
-                            🌡️ Température de surface
-                        </p>
-                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
-                            <strong>LST</strong> : Température du sol mesurée par satellite infrarouge.
-                        </p>
-                        <div style="background: linear-gradient(to right, #0066cc, #00ccff, #66ff66, #ffff00, #ff6600, #cc0000);
-                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
-                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                            <span>Froid (0°C)</span><span>Chaud (50°C)</span>
-                        </div>
-                    </div>
-                    
-                    <!-- FORÊT -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #006600; background: #f0fff0;">
-                        <p style="margin: 2px 0; font-weight: bold; color: #006600; font-size: 11px;">
-                            🌳 Couverture forestière
-                        </p>
-                        <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
-                            Probabilité de présence d'arbres (0-100%). Analyse satellite des zones boisées.
-                        </p>
-                        <div style="background: linear-gradient(to right, #90EE90, #66cc66, #339933, #006600, #003300);
-                                    height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
-                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                            <span>Peu d'arbres</span><span>Forêt dense</span>
-                        </div>
-                    </div>
-                    
-                   <!-- EAU (WEI) -->
-                    <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #1e90ff; background: #f0f8ff;">
-                        <p style="margin: 2px 0; font-weight: bold; color: #1e90ff; font-size: 11px;">
-                            💧 Zones en eau
-                        </p>
-                        <p style="margin:3px 0;font-size:9px;color:#666;line-height:1.2;">
-                            <strong>WEI</strong> : présence d'eau en surface. Plus la valeur est élevée, plus l'eau est probable.
-                        </p>
-                        <div style="background: linear-gradient(to right, #e6f2ff, #b3d9ff, #66b2ff, #1e90ff, #003d7a);
-                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;">
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
-                            <span>Faible</span><span>Fort</span>
-                        </div>
-                    </div>
-                    
-                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
-                    
-                    <!-- INFORMATIONS TECHNIQUES -->
-                    <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 8px;">
-                        <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 10px; color: #495057;">
-                            📊 Informations techniques
-                        </p>
-                        <div style="font-size: 9px; color: #6c757d; line-height: 1.3;">
-                            <p style="margin: 2px 0;"><strong>Période :</strong> ''' + self.begining + ''' → ''' + self.end + '''</p>
-                            <p style="margin: 2px 0;"><strong>Département :</strong> ''' + self.department_name + '''</p>
-                            <p style="margin: 2px 0;"><strong>Satellites :</strong> Sentinel-2, MODIS, VIIRS</p>
-                            <p style="margin: 2px 0;"><strong>Résolution :</strong> 10-1000m selon la couche</p>
-                        </div>
-                    </div>
-                    
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <span id="toggle-btn" onclick="event.stopPropagation(); toggleLegend()" 
+                          style="cursor: pointer; color: #6c757d; font-weight: bold; font-size: 14px;">−</span>
+                    <span onclick="event.stopPropagation(); closeLegend()" 
+                          style="cursor: pointer; color: #dc3545; font-weight: bold; font-size: 14px;">✕</span>
                 </div>
             </div>
             
-            <script>
-            // Attendre le chargement complet du DOM
-            document.addEventListener('DOMContentLoaded', function() {
-                // Petit délai pour s'assurer que Folium a fini de charger
-                setTimeout(initializeLegend, 100);
-            });
+            <!-- CONTENU -->
+            <div id="legend-content" style="padding: 12px; max-height: 400px; overflow-y: auto;">
+                
+                <!-- FEUX DE BROUSSE -->
+                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #ff6600; background: #fff5f0;">
+                    <p style="margin: 2px 0; font-weight: bold; color: #cc4400; font-size: 11px;">
+                        🔥 Feux de brousse
+                    </p>
+                    <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                        <strong>FRP</strong> : Intensité énergétique des incendies détectés par satellite.
+                    </p>
+                    <div style="background: linear-gradient(to right, #ffff00, #ff8000, #ff0000, #800000, #400000);
+                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                        <span>Modéré</span><span>Très intense</span>
+                    </div>
+                </div>
+                
+                <!-- TEMPÉRATURE -->
+                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #0066cc; background: #f0f8ff;">
+                    <p style="margin: 2px 0; font-weight: bold; color: #0066cc; font-size: 11px;">
+                        🌡️ Température de surface
+                    </p>
+                    <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                        <strong>LST</strong> : Température du sol mesurée par satellite infrarouge.
+                    </p>
+                    <div style="background: linear-gradient(to right, #0066cc, #00ccff, #66ff66, #ffff00, #ff6600, #cc0000);
+                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                        <span>Froid (0°C)</span><span>Chaud (50°C)</span>
+                    </div>
+                </div>
+                
+                <!-- FORÊT -->
+                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #006600; background: #f0fff0;">
+                    <p style="margin: 2px 0; font-weight: bold; color: #006600; font-size: 11px;">
+                        🌳 Couverture forestière
+                    </p>
+                    <p style="margin: 3px 0; font-size: 9px; color: #666; line-height: 1.2;">
+                        Probabilité de présence d'arbres (0-100%). Analyse satellite des zones boisées.
+                    </p>
+                    <div style="background: linear-gradient(to right, #90EE90, #66cc66, #339933, #006600, #003300);
+                                height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                        <span>Peu d'arbres</span><span>Forêt dense</span>
+                    </div>
+                </div>
+                
+               <!-- EAU (WEI) -->
+                <div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid #1e90ff; background: #f0f8ff;">
+                    <p style="margin: 2px 0; font-weight: bold; color: #1e90ff; font-size: 11px;">
+                        💧 Zones en eau
+                    </p>
+                    <p style="margin:3px 0;font-size:9px;color:#666;line-height:1.2;">
+                        <strong>WEI</strong> : présence d’eau en surface. Plus la valeur est élevée, plus l’eau est probable.
+                    </p>
+                    <div style="background: linear-gradient(to right, #e6f2ff, #b3d9ff, #66b2ff, #1e90ff, #003d7a);
+                            height: 10px; width: 100%; border: 1px solid #ccc; border-radius: 2px; margin: 4px 0;">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #666;">
+                        <span>Faible</span><span>Fort</span>
+                    </div>
+                </div>
+                
+                <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
+                
+                <!-- INFORMATIONS TECHNIQUES -->
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 8px;">
+                    <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 10px; color: #495057;">
+                        📊 Informations techniques
+                    </p>
+                    <div style="font-size: 9px; color: #6c757d; line-height: 1.3;">
+                        <p style="margin: 2px 0;"><strong>Période :</strong> ''' + self.begining + ''' → ''' + self.end + '''</p>
+                        <p style="margin: 2px 0;"><strong>Département :</strong> ''' + self.department_name + '''</p>
+                        <p style="margin: 2px 0;"><strong>Satellites :</strong> Sentinel-2, MODIS, VIIRS</p>
+                        <p style="margin: 2px 0;"><strong>Résolution :</strong> 10-1000m selon la couche</p>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <script>
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+        
+        function startDrag(e) {
+            if (e.target.closest('#legend-header')) return;
             
-            function initializeLegend() {
-                var container = document.getElementById('legend-container');
-                var header = document.getElementById('legend-header');
-                var toggleBtn = document.getElementById('toggle-btn');
-                var closeBtn = document.getElementById('close-btn');
-                var content = document.getElementById('legend-content');
-                
-                if (!container || !toggleBtn || !closeBtn || !content || !header) {
-                    console.error('Éléments de légende non trouvés');
-                    return;
-                }
-                
-                console.log('✅ Légende initialisée avec succès');
-                
-                // Variables pour le drag
-                var isDragging = false;
-                var currentX = 0;
-                var currentY = 0;
-                var initialX = 0;
-                var initialY = 0;
-                
-                // ===== BOUTON TOGGLE =====
-                toggleBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    
-                    if (content.style.display === 'none') {
-                        content.style.display = 'block';
-                        toggleBtn.textContent = '−';
-                    } else {
-                        content.style.display = 'none';
-                        toggleBtn.textContent = '+';
-                    }
-                });
-                
-                // ===== BOUTON CLOSE =====
-                closeBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    container.style.display = 'none';
-                });
-                
-                // ===== DRAG & DROP =====
-                header.addEventListener('mousedown', function(e) {
-                    // Ne pas démarrer le drag si on clique sur les boutons
-                    if (e.target === toggleBtn || e.target === closeBtn) {
-                        return;
-                    }
-                    
-                    isDragging = true;
-                    initialX = e.clientX - currentX;
-                    initialY = e.clientY - currentY;
-                    header.style.cursor = 'grabbing';
-                    e.preventDefault();
-                });
-                
-                document.addEventListener('mousemove', function(e) {
-                    if (isDragging) {
-                        e.preventDefault();
-                        currentX = e.clientX - initialX;
-                        currentY = e.clientY - initialY;
-                        container.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
-                    }
-                });
-                
-                document.addEventListener('mouseup', function() {
-                    if (isDragging) {
-                        isDragging = false;
-                        header.style.cursor = 'move';
-                    }
-                });
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            
+            if (e.target === document.getElementById('legend-container')) {
+                isDragging = true;
             }
-            </script>
-        {% endmacro %}
+        }
+        
+        function dragElement(e) {
+            if (isDragging) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+                
+                xOffset = currentX;
+                yOffset = currentY;
+                
+                setTranslate(currentX, currentY, document.getElementById('legend-container'));
+            }
+        }
+        
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+        }
+        
+        function endDrag(e) {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+        
+        document.addEventListener('mousemove', dragElement);
+        document.addEventListener('mouseup', endDrag);
+        
+        function toggleLegend() {
+            var content = document.getElementById('legend-content');
+            var btn = document.getElementById('toggle-btn');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                btn.innerHTML = '−';
+            } else {
+                content.style.display = 'none';
+                btn.innerHTML = '+';
+            }
+        }
+        
+        function closeLegend() {
+            document.getElementById('legend-container').style.display = 'none';
+        }
+        </script>
         '''
+        m.get_root().html.add_child(folium.Element(legend_html))
         
-        # =====================================
-        # 📍 CONTOUR DÉPARTEMENT
-        # =====================================
-        dept_geojson = self.department.geometry().getInfo()
-        folium.GeoJson(
-            dept_geojson,
-            name=self.department_name,
-            style_function=lambda x: {"color": "black", "weight": 2, "fillOpacity": 0}
-        ).add_to(m)
-    
-        # =====================================
-        # 🎛️ CONTROLES
-        # =====================================
-        folium.LayerControl(collapsed=False).add_to(m)
-        
-        # ✅ CORRECTION: Utiliser MacroElement avec Template pour que JavaScript fonctionne
-        legend_macro = MacroElement()
-        legend_macro._template = Template(legend_html)
-        m.get_root().add_child(legend_macro)
-    
+        try:
+            m.addLayerControl()
+        except Exception:
+            m.add_child(folium.LayerControl(collapsed=False))
+
         return m
 
     # =============================================
