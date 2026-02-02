@@ -1,7 +1,8 @@
 geemap
-folium
 earthengine-api
 streamlit
+folium
+streamlit-folium
 python-dateutil
 Pillow
 plotly
